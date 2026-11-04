@@ -1,0 +1,2038 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "VectorDock Capture Backend",
+    "description": "Manual trap, QR identification, phone photo confirmation, asynchronous Modal counting, and human acceptance of candidate counts. QR identification is not authentication; SAM3 outputs are candidate detections for human review.",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/api/auth/login": {
+      "post": {
+        "summary": "Login",
+        "operationId": "login_api_auth_login_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/logout": {
+      "post": {
+        "summary": "Logout",
+        "operationId": "logout_api_auth_logout_post",
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          }
+        }
+      }
+    },
+    "/api/auth/me": {
+      "get": {
+        "summary": "Me",
+        "operationId": "me_api_auth_me_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeOut"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/health": {
+      "get": {
+        "summary": "Health",
+        "operationId": "health_api_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthOut"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/traps/{trap_id}": {
+      "get": {
+        "summary": "Get Trap",
+        "description": "Authorized trap lookup with a bounded sample slice.\n\nsample_state filters: active (default, removed_at IS NULL),\nawaiting_image (removed, no photo yet), awaiting_review (removed, has a\ncompleted candidate, no active review), all (paginated). Defaults keep\nthe historical response shape.",
+        "operationId": "get_trap_api_traps__trap_id__get",
+        "parameters": [
+          {
+            "name": "trap_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Trap Id"
+            }
+          },
+          {
+            "name": "sample_state",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "active",
+              "title": "Sample State"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrapOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/traps/{trap_id}/uploads": {
+      "get": {
+        "summary": "List Trap Uploads",
+        "description": "Reload-safe, paginated image history, including unreviewed retakes.",
+        "operationId": "list_trap_uploads_api_traps__trap_id__uploads_get",
+        "parameters": [
+          {
+            "name": "trap_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Trap Id"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 50,
+              "minimum": 1,
+              "default": 25,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadQueueOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/samples/{sample_id}": {
+      "get": {
+        "summary": "Get Sample",
+        "operationId": "get_sample_api_samples__sample_id__get",
+        "parameters": [
+          {
+            "name": "sample_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Sample Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SampleOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "summary": "Patch Sample",
+        "operationId": "patch_sample_api_samples__sample_id__patch",
+        "parameters": [
+          {
+            "name": "sample_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Sample Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SampleUpdateIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SampleUpdateOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/traps/{trap_id}/samples": {
+      "post": {
+        "summary": "Create Sample Route",
+        "operationId": "create_sample_route_api_traps__trap_id__samples_post",
+        "parameters": [
+          {
+            "name": "trap_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Trap Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SampleCreateIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SampleOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/samples/{sample_id}/images": {
+      "post": {
+        "summary": "Submit Image",
+        "operationId": "submit_image_api_samples__sample_id__images_post",
+        "parameters": [
+          {
+            "name": "sample_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Sample Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_submit_image_api_samples__sample_id__images_post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/uploads/{upload_id}": {
+      "get": {
+        "summary": "Get Upload",
+        "operationId": "get_upload_api_uploads__upload_id__get",
+        "parameters": [
+          {
+            "name": "upload_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Upload Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/uploads/{upload_id}/poll": {
+      "post": {
+        "summary": "Poll Upload",
+        "description": "Check an existing call, without submitting another inference job.\n\nThe phone uses this only while a user is looking at a pending upload.\nUnattended recovery remains scheduled separately. A candidate result is\nnot an accepted measurement and creates no measurement revision.",
+        "operationId": "poll_upload_api_uploads__upload_id__poll_post",
+        "parameters": [
+          {
+            "name": "upload_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Upload Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/uploads/{upload_id}/retake": {
+      "post": {
+        "summary": "Request Attention Retake",
+        "description": "Audit a human choice to take a NEW photo. Never restart the old job.",
+        "operationId": "request_attention_retake_api_uploads__upload_id__retake_post",
+        "parameters": [
+          {
+            "name": "upload_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Upload Id"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RetakeRequestOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/images/{image_id}/original": {
+      "get": {
+        "summary": "Get Original",
+        "operationId": "get_original_api_images__image_id__original_get",
+        "parameters": [
+          {
+            "name": "image_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Image Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/results/{result_id}/annotation": {
+      "get": {
+        "summary": "Get Annotation",
+        "operationId": "get_annotation_api_results__result_id__annotation_get",
+        "parameters": [
+          {
+            "name": "result_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Result Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/samples/{sample_id}/reviews": {
+      "post": {
+        "summary": "Create Review Route",
+        "operationId": "create_review_route_api_samples__sample_id__reviews_post",
+        "parameters": [
+          {
+            "name": "sample_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Sample Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewCreateIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeasurementOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/recovery": {
+      "post": {
+        "summary": "Run Recovery Route",
+        "operationId": "run_recovery_route_api_admin_recovery_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecoveryOut"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/forecasts": {
+      "post": {
+        "summary": "Create Forecast",
+        "operationId": "create_forecast_api_forecasts_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_create_forecast_api_forecasts_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Create Forecast Api Forecasts Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Body_create_forecast_api_forecasts_post": {
+        "properties": {
+          "model": {
+            "type": "string",
+            "enum": [
+              "tree",
+              "epikd"
+            ],
+            "title": "Model"
+          },
+          "region": {
+            "type": "string",
+            "maxLength": 16,
+            "minLength": 1,
+            "title": "Region"
+          },
+          "issue_date": {
+            "type": "string",
+            "maxLength": 10,
+            "minLength": 10,
+            "title": "Issue Date"
+          },
+          "panel": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "Panel"
+          }
+        },
+        "type": "object",
+        "required": [
+          "model",
+          "region",
+          "issue_date",
+          "panel"
+        ],
+        "title": "Body_create_forecast_api_forecasts_post"
+      },
+      "Body_submit_image_api_samples__sample_id__images_post": {
+        "properties": {
+          "client_key": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 8,
+            "title": "Client Key"
+          },
+          "captured_at": {
+            "type": "string",
+            "title": "Captured At"
+          },
+          "captured_at_offset": {
+            "type": "string",
+            "title": "Captured At Offset",
+            "default": "+00:00"
+          },
+          "file": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "File"
+          }
+        },
+        "type": "object",
+        "required": [
+          "client_key",
+          "captured_at",
+          "file"
+        ],
+        "title": "Body_submit_image_api_samples__sample_id__images_post"
+      },
+      "DeploymentOut": {
+        "properties": {
+          "deployment_id": {
+            "type": "integer",
+            "title": "Deployment Id"
+          },
+          "trap_id": {
+            "type": "string",
+            "title": "Trap Id"
+          },
+          "site_id": {
+            "type": "string",
+            "title": "Site Id"
+          },
+          "district_code": {
+            "type": "string",
+            "title": "District Code"
+          },
+          "location_note": {
+            "type": "string",
+            "title": "Location Note"
+          },
+          "start_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Start At"
+          },
+          "end_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "deployment_id",
+          "trap_id",
+          "site_id",
+          "district_code",
+          "location_note",
+          "start_at",
+          "end_at"
+        ],
+        "title": "DeploymentOut"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "HealthOut": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "env": {
+            "type": "string",
+            "title": "Env"
+          },
+          "database": {
+            "type": "string",
+            "title": "Database"
+          },
+          "storage": {
+            "type": "string",
+            "title": "Storage"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "status",
+          "env",
+          "database",
+          "storage"
+        ],
+        "title": "HealthOut"
+      },
+      "LoginIn": {
+        "properties": {
+          "username": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Username"
+          },
+          "password": {
+            "type": "string",
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Password"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "username",
+          "password"
+        ],
+        "title": "LoginIn"
+      },
+      "LoginOut": {
+        "properties": {
+          "operator": {
+            "$ref": "#/components/schemas/OperatorOut"
+          },
+          "csrf_token": {
+            "type": "string",
+            "title": "Csrf Token"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "operator",
+          "csrf_token"
+        ],
+        "title": "LoginOut"
+      },
+      "MeOut": {
+        "properties": {
+          "operator": {
+            "$ref": "#/components/schemas/OperatorOut"
+          },
+          "granted_trap_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Granted Trap Ids"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "operator",
+          "granted_trap_ids"
+        ],
+        "title": "MeOut"
+      },
+      "MeasurementOut": {
+        "properties": {
+          "measurement_id": {
+            "type": "string",
+            "title": "Measurement Id"
+          },
+          "sample_id": {
+            "type": "integer",
+            "title": "Sample Id"
+          },
+          "image_id": {
+            "type": "string",
+            "title": "Image Id"
+          },
+          "result_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Result Id"
+          },
+          "decision": {
+            "type": "string",
+            "enum": [
+              "accepted",
+              "rejected"
+            ],
+            "title": "Decision"
+          },
+          "accepted_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Accepted Count"
+          },
+          "count_source": {
+            "type": "string",
+            "enum": [
+              "candidate",
+              "corrected"
+            ],
+            "title": "Count Source"
+          },
+          "candidate_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Candidate Count"
+          },
+          "reviewer": {
+            "type": "string",
+            "title": "Reviewer"
+          },
+          "reviewed_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Reviewed At"
+          },
+          "available_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Available At"
+          },
+          "usable_exposure": {
+            "type": "boolean",
+            "title": "Usable Exposure"
+          },
+          "quality_flags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Quality Flags"
+          },
+          "taxon_verification": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Taxon Verification"
+          },
+          "rejection_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rejection Reason"
+          },
+          "revision": {
+            "type": "integer",
+            "title": "Revision"
+          },
+          "supersedes_measurement_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Supersedes Measurement Id"
+          },
+          "superseded_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Superseded At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "measurement_id",
+          "sample_id",
+          "image_id",
+          "result_id",
+          "decision",
+          "accepted_count",
+          "count_source",
+          "candidate_count",
+          "reviewer",
+          "reviewed_at",
+          "available_at",
+          "usable_exposure",
+          "quality_flags",
+          "taxon_verification",
+          "rejection_reason",
+          "revision",
+          "supersedes_measurement_id",
+          "superseded_at"
+        ],
+        "title": "MeasurementOut"
+      },
+      "OperatorOut": {
+        "properties": {
+          "username": {
+            "type": "string",
+            "title": "Username"
+          },
+          "display_name": {
+            "type": "string",
+            "title": "Display Name"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "worker",
+              "reviewer",
+              "admin"
+            ],
+            "title": "Role"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "username",
+          "display_name",
+          "role"
+        ],
+        "title": "OperatorOut"
+      },
+      "ProcessingStatusOut": {
+        "properties": {
+          "state": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "running",
+              "completed",
+              "failed"
+            ],
+            "title": "State"
+          },
+          "failure_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Failure Reason"
+          },
+          "modal_call_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Modal Call Id"
+          },
+          "needs_attention": {
+            "type": "boolean",
+            "title": "Needs Attention",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "state",
+          "failure_reason",
+          "modal_call_id"
+        ],
+        "title": "ProcessingStatusOut"
+      },
+      "RecoveryOut": {
+        "properties": {
+          "reservations_completed": {
+            "type": "integer",
+            "title": "Reservations Completed"
+          },
+          "reservations_failed": {
+            "type": "integer",
+            "title": "Reservations Failed"
+          },
+          "jobs_created": {
+            "type": "integer",
+            "title": "Jobs Created"
+          },
+          "jobs_dispatched": {
+            "type": "integer",
+            "title": "Jobs Dispatched"
+          },
+          "jobs_published": {
+            "type": "integer",
+            "title": "Jobs Published"
+          },
+          "jobs_failed": {
+            "type": "integer",
+            "title": "Jobs Failed"
+          },
+          "jobs_needs_attention": {
+            "type": "integer",
+            "title": "Jobs Needs Attention",
+            "default": 0
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "reservations_completed",
+          "reservations_failed",
+          "jobs_created",
+          "jobs_dispatched",
+          "jobs_published",
+          "jobs_failed"
+        ],
+        "title": "RecoveryOut"
+      },
+      "ResultPreviewOut": {
+        "properties": {
+          "result_id": {
+            "type": "string",
+            "title": "Result Id"
+          },
+          "candidate_count": {
+            "type": "integer",
+            "title": "Candidate Count"
+          },
+          "annotation_url": {
+            "type": "string",
+            "title": "Annotation Url"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "result_id",
+          "candidate_count",
+          "annotation_url"
+        ],
+        "title": "ResultPreviewOut",
+        "description": "Read-only preview of a completed candidate result.\n\nExposing a candidate never creates a measurement, never sets available_at\nand never accepts a sample. Retrieval of the annotation stays authorized\nby the trap access grant."
+      },
+      "RetakeRequestOut": {
+        "properties": {
+          "sample_id": {
+            "type": "integer",
+            "title": "Sample Id"
+          },
+          "audit_id": {
+            "type": "integer",
+            "title": "Audit Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "sample_id",
+          "audit_id"
+        ],
+        "title": "RetakeRequestOut"
+      },
+      "ReviewCreateIn": {
+        "properties": {
+          "expected_sample_revision": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Expected Sample Revision"
+          },
+          "expected_measurement_revision": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Measurement Revision"
+          },
+          "image_id": {
+            "type": "string",
+            "title": "Image Id"
+          },
+          "result_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Result Id"
+          },
+          "decision": {
+            "type": "string",
+            "enum": [
+              "accepted",
+              "rejected"
+            ],
+            "title": "Decision"
+          },
+          "corrected_count": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Corrected Count"
+          },
+          "usable_exposure": {
+            "type": "boolean",
+            "title": "Usable Exposure",
+            "default": true
+          },
+          "quality_flags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Quality Flags"
+          },
+          "taxon_verification": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 64
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Taxon Verification"
+          },
+          "rejection_reason": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rejection Reason"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "expected_sample_revision",
+          "image_id",
+          "decision"
+        ],
+        "title": "ReviewCreateIn"
+      },
+      "ReviewStatusOut": {
+        "properties": {
+          "state": {
+            "type": "string",
+            "enum": [
+              "pending_review",
+              "accepted",
+              "rejected"
+            ],
+            "title": "State"
+          },
+          "measurement_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Measurement Id"
+          },
+          "measurement_revision": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Measurement Revision"
+          },
+          "accepted_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Accepted Count"
+          },
+          "sample_active": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SampleActiveReviewOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "state"
+        ],
+        "title": "ReviewStatusOut",
+        "description": "Review view returned by upload status.\n\nField semantics (documented contract):\n- `state`, `measurement_id` and `measurement_revision` describe THIS\n  upload's image only: they are pending_review/None while the image awaits\n  human review, even when another photo of the same sample is already the\n  accepted active measurement.\n- `sample_active` describes the SAMPLE's active measurement (any image,\n  any decision); its `revision` is the expected_measurement_revision a\n  reviewer supplies to supersede it explicitly."
+      },
+      "SampleActiveReviewOut": {
+        "properties": {
+          "measurement_id": {
+            "type": "string",
+            "title": "Measurement Id"
+          },
+          "image_id": {
+            "type": "string",
+            "title": "Image Id"
+          },
+          "decision": {
+            "type": "string",
+            "enum": [
+              "accepted",
+              "rejected"
+            ],
+            "title": "Decision"
+          },
+          "revision": {
+            "type": "integer",
+            "title": "Revision"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "measurement_id",
+          "image_id",
+          "decision",
+          "revision"
+        ],
+        "title": "SampleActiveReviewOut",
+        "description": "The SAMPLE's active measurement (any image, any decision).\n\nIts revision is the optimistic-concurrency token for the next explicit\nreplacement or correcting review (expected_measurement_revision)."
+      },
+      "SampleCreateIn": {
+        "properties": {
+          "sample_type": {
+            "type": "string",
+            "enum": [
+              "adult_card",
+              "egg_strip"
+            ],
+            "title": "Sample Type"
+          },
+          "installed_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Installed At"
+          },
+          "installed_at_offset": {
+            "type": "string",
+            "title": "Installed At Offset",
+            "default": "+00:00"
+          },
+          "cartridge_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 64
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cartridge Id"
+          },
+          "strip_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 64
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Strip Id"
+          },
+          "exposed_area_cm2": {
+            "anyOf": [
+              {
+                "type": "number",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exposed Area Cm2"
+          },
+          "condition_notes": {
+            "type": "string",
+            "maxLength": 255,
+            "title": "Condition Notes",
+            "default": ""
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "sample_type",
+          "installed_at"
+        ],
+        "title": "SampleCreateIn"
+      },
+      "SampleOut": {
+        "properties": {
+          "sample_id": {
+            "type": "integer",
+            "title": "Sample Id"
+          },
+          "trap_id": {
+            "type": "string",
+            "title": "Trap Id"
+          },
+          "deployment_id": {
+            "type": "integer",
+            "title": "Deployment Id"
+          },
+          "sample_type": {
+            "type": "string",
+            "enum": [
+              "adult_card",
+              "egg_strip"
+            ],
+            "title": "Sample Type"
+          },
+          "cartridge_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cartridge Id"
+          },
+          "strip_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Strip Id"
+          },
+          "installed_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Installed At"
+          },
+          "installed_at_offset": {
+            "type": "string",
+            "title": "Installed At Offset"
+          },
+          "removed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Removed At"
+          },
+          "removed_at_offset": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Removed At Offset"
+          },
+          "exposed_area_cm2": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exposed Area Cm2"
+          },
+          "condition_notes": {
+            "type": "string",
+            "title": "Condition Notes"
+          },
+          "exposure_known": {
+            "type": "boolean",
+            "title": "Exposure Known"
+          },
+          "revision": {
+            "type": "integer",
+            "title": "Revision"
+          },
+          "is_test_fixture": {
+            "type": "boolean",
+            "title": "Is Test Fixture"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "sample_id",
+          "trap_id",
+          "deployment_id",
+          "sample_type",
+          "cartridge_id",
+          "strip_id",
+          "installed_at",
+          "installed_at_offset",
+          "removed_at",
+          "removed_at_offset",
+          "exposed_area_cm2",
+          "condition_notes",
+          "exposure_known",
+          "revision",
+          "is_test_fixture"
+        ],
+        "title": "SampleOut"
+      },
+      "SampleUpdateIn": {
+        "properties": {
+          "expected_revision": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Expected Revision"
+          },
+          "removed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Removed At"
+          },
+          "removed_at_offset": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Removed At Offset"
+          },
+          "condition_notes": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Condition Notes"
+          },
+          "exposure_known": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exposure Known"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "expected_revision"
+        ],
+        "title": "SampleUpdateIn"
+      },
+      "SampleUpdateOut": {
+        "properties": {
+          "sample": {
+            "$ref": "#/components/schemas/SampleOut"
+          },
+          "audit_id": {
+            "type": "integer",
+            "title": "Audit Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "sample",
+          "audit_id"
+        ],
+        "title": "SampleUpdateOut"
+      },
+      "TrapOut": {
+        "properties": {
+          "trap_id": {
+            "type": "string",
+            "title": "Trap Id"
+          },
+          "district_code": {
+            "type": "string",
+            "title": "District Code"
+          },
+          "site_id": {
+            "type": "string",
+            "title": "Site Id"
+          },
+          "placement": {
+            "type": "string",
+            "title": "Placement"
+          },
+          "trap_design_version": {
+            "type": "string",
+            "title": "Trap Design Version"
+          },
+          "lure_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lure Version"
+          },
+          "surface_protocol": {
+            "type": "string",
+            "title": "Surface Protocol"
+          },
+          "is_test_fixture": {
+            "type": "boolean",
+            "title": "Is Test Fixture"
+          },
+          "active_deployment": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DeploymentOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "samples": {
+            "items": {
+              "$ref": "#/components/schemas/SampleOut"
+            },
+            "type": "array",
+            "title": "Samples"
+          },
+          "sample_state": {
+            "type": "string",
+            "title": "Sample State",
+            "default": "active"
+          },
+          "sample_total": {
+            "type": "integer",
+            "title": "Sample Total",
+            "default": 0
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "trap_id",
+          "district_code",
+          "site_id",
+          "placement",
+          "trap_design_version",
+          "lure_version",
+          "surface_protocol",
+          "is_test_fixture",
+          "active_deployment",
+          "samples"
+        ],
+        "title": "TrapOut"
+      },
+      "UploadOut": {
+        "properties": {
+          "upload_id": {
+            "type": "string",
+            "title": "Upload Id"
+          },
+          "sample_id": {
+            "type": "integer",
+            "title": "Sample Id"
+          },
+          "image_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Image Id"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "receiving",
+              "stored",
+              "failed"
+            ],
+            "title": "Status"
+          },
+          "failure_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Failure Reason"
+          },
+          "received_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Received At"
+          },
+          "captured_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Captured At"
+          },
+          "processing": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProcessingStatusOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "review": {
+            "$ref": "#/components/schemas/ReviewStatusOut"
+          },
+          "result": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ResultPreviewOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status_url": {
+            "type": "string",
+            "title": "Status Url"
+          },
+          "original_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Original Url"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "upload_id",
+          "sample_id",
+          "image_id",
+          "status",
+          "failure_reason",
+          "received_at",
+          "captured_at",
+          "processing",
+          "review",
+          "status_url"
+        ],
+        "title": "UploadOut"
+      },
+      "UploadQueueItemOut": {
+        "properties": {
+          "sample": {
+            "$ref": "#/components/schemas/SampleOut"
+          },
+          "upload": {
+            "$ref": "#/components/schemas/UploadOut"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "sample",
+          "upload"
+        ],
+        "title": "UploadQueueItemOut"
+      },
+      "UploadQueueOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/UploadQueueItemOut"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          },
+          "offset": {
+            "type": "integer",
+            "title": "Offset"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "title": "UploadQueueOut"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  }
+}

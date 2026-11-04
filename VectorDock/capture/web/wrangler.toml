@@ -1,0 +1,11 @@
+# Example Cloudflare Pages configuration for the VectorDock capture app.
+# The Pages project is deployed from the allowlisted output directory.
+# Build the allowlisted dist/ directory before deployment.
+# Never put CAPTURE_RELAY_TOKEN in this file: set it as a secret binding.
+name = "vectordock-capture"
+pages_build_output_dir = "dist"
+compatibility_date = "2026-01-01"
+
+[vars]
+CAPTURE_ENVIRONMENT = "production"
+CAPTURE_BACKEND_ORIGIN = "https://widagdo1994--vectordock-capture-api.us-east.modal.run"

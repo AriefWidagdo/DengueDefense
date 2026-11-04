@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="description" content="Local VectorDock container label maker. Generate and print QR labels without a cloud service.">
+  <title>VectorDock — QR labels</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="vendor/qrcode.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <header class="topbar no-print">
+    <a class="brand" href="./">VectorDock <span>FIELD LABELS</span></a>
+    <span class="local-badge">LOCAL TOOL · NO CLOUD UPLOAD</span>
+  </header>
+  <main class="no-print" data-screen-label="Container QR label maker">
+    <div class="intro">
+      <div><p class="eyebrow">PREPARE YOUR CONTAINERS</p><h1>Enter. Print. Place.</h1><p>One container ID per housing. Keep that ID when you replace a card or egg strip.</p></div>
+      <div class="intro-note">Ready for paper<br><strong>48 mm QR · black on white</strong></div>
+    </div>
+    <div class="workspace">
+      <section class="editor" aria-labelledby="editor-heading">
+        <div class="section-title"><h2 id="editor-heading">Container details</h2><button id="new-label" type="button" class="text-button">New label</button></div>
+        <form id="label-form">
+          <div class="field-row">
+            <label>Container ID <span class="required">required</span><input name="trap_id" id="trap-id" placeholder="VD-001" maxlength="40" pattern="[A-Za-z0-9][A-Za-z0-9\-]{1,39}" required autocomplete="off" spellcheck="false"><small>Letters, numbers and hyphens. Do not reuse an ID for another container.</small></label>
+            <label>Deployment date <span class="required">required</span><input name="deployed_on" id="deployed-on" type="date" required></label>
+          </div>
+          <label>Site name <span class="required">required</span><input name="site" maxlength="70" placeholder="Site / building / district" required></label>
+          <label>Exact location / placement <span class="required">required</span><input name="location" maxlength="140" placeholder="Street, compound, room or placement landmark" required><small>Enough detail for someone else to find the container. Do not add access codes.</small></label>
+          <details class="optional-fields">
+            <summary>GPS, service date and placement notes</summary>
+            <div class="optional-body">
+              <div class="field-row">
+                <label>Latitude<input name="latitude" inputmode="decimal" placeholder="-6.200000" maxlength="14"></label>
+                <label>Longitude<input name="longitude" inputmode="decimal" placeholder="106.816666" maxlength="15"></label>
+              </div>
+              <div class="field-row">
+                <label>Next service date<input name="service_on" type="date"></label>
+                <label>Container setup<select name="setup"><option value="">Not specified</option><option>Adult card + egg strip</option><option>Adult card</option><option>Egg strip</option></select></label>
+              </div>
+              <label>Placement note<input name="note" maxlength="100" placeholder="For example: under cover, beside the north gate"></label>
+            </div>
+          </details>
+          <fieldset class="mode-fieldset">
+            <legend>What should scanning do?</legend>
+            <label class="radio-option"><input type="radio" name="mode" value="identity" checked><span><strong>Identify this bucket in a capture photo — recommended</strong><small>Short, permanent container ID. Include it beside the collection surface in your photo. Register this ID in the capture app to resolve its location.</small></span></label>
+            <label class="radio-option"><input type="radio" name="mode" value="details"><span><strong>Read a snapshot of the container details</strong><small>Stores text inside the QR. No website or network needed. Longer than the ID-only code; use a QR reader that displays text.</small></span></label>
+            <label class="radio-option"><input type="radio" name="mode" value="maps"><span><strong>Open the location in Maps</strong><small>Location only; this code has no bucket ID. Do not use it for automatic photo assignment. Needs a connection.</small></span></label>
+          </fieldset>
+          <p id="form-error" class="error" role="alert" hidden></p>
+          <div class="actions"><button id="print-current" type="submit" class="primary" disabled>Print this label</button><button id="save-label" type="button" disabled>Save to label list</button></div>
+          <p class="small-note">Bucket ID mode stores only the ID, not changing dates or locations. The capture app resolves its registered location. This local tool does not register or sync the bucket. Details mode stores a snapshot. Anyone who scans a QR can read its contents.</p>
+        </form>
+      </section>
+      <aside class="preview-panel" aria-labelledby="preview-heading">
+        <div class="section-title"><h2 id="preview-heading">Print preview</h2><span class="subtle">Paper label</span></div>
+        <div id="preview" class="preview"><div class="empty-preview"><span class="empty-marker">QR</span><p>Enter the container ID, date, site and location.</p><small>Your actual label appears here.</small></div></div>
+        <p id="scan-status" class="scan-status" aria-live="polite">QR generation happens on this computer.</p>
+        <details class="payload-details"><summary>See exactly what the QR contains</summary><pre id="payload">No QR generated yet.</pre></details>
+        <div class="print-tips"><strong>Before you leave</strong><p>Print at 100% / Actual size. Turn off browser headers and footers. Test the printed QR with your phone before attaching it. Keep the white border clear.</p></div>
+      </aside>
+    </div>
+    <section class="saved-section" aria-labelledby="saved-heading">
+      <div class="section-title saved-header"><div><h2 id="saved-heading">Your label list <span id="saved-count">0</span></h2><p>Saved only in this browser. This is not the live trap registry.</p></div><div class="actions"><button id="export-labels" type="button" disabled>Export JSON</button><button id="print-saved" type="button" disabled>Print saved labels</button></div></div>
+      <div id="saved-list" class="saved-list"><p class="subtle">Save a label to prepare several containers.</p></div>
+      <p id="storage-status" class="small-note" role="status"></p>
+    </section>
+  </main>
+  <div id="print-area" aria-label="Printable container labels"></div>
+  <noscript><p>This local tool needs JavaScript to generate QR codes.</p></noscript>
+</body>
+</html>

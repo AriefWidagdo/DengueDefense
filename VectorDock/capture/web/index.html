@@ -1,0 +1,406 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>VectorDock field capture</title>
+<meta name="description" content="VectorDock trap capture: identify a trap, photograph a collection surface, upload for counting, and review candidate counts.">
+<link rel="stylesheet" href="css/app.css">
+<!-- Pinned local QR decoder (jsqr 1.4.0, vendored, classic script sets window.jsQR). -->
+<script src="vendor/jsQR.js"></script>
+<script type="module" src="js/app.js"></script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-mark" aria-hidden="true">VD</span>
+    <span class="brand-text">VectorDock <small>field capture</small></span>
+  </div>
+  <div class="operator" id="operatorBox" hidden>
+    <span id="operatorName"></span>
+    <span class="badge" id="operatorRole"></span>
+    <button type="button" class="btn btn-quiet" id="signOutBtn">Sign out</button>
+  </div>
+</header>
+
+<main id="main" class="shell">
+
+  <!-- Sign in -->
+  <section id="view-signin" class="view" hidden aria-labelledby="signin-heading">
+    <h1 id="signin-heading">Sign in</h1>
+    <p class="lede">Named operator account. QR codes identify traps only; they do not sign anyone in.</p>
+    <form id="signinForm" novalidate>
+      <div class="field">
+        <label for="signinUsername">Operator name</label>
+        <input id="signinUsername" name="username" type="text" autocomplete="username"
+               required maxlength="64" inputmode="text" autocapitalize="none">
+      </div>
+      <div class="field">
+        <label for="signinPassword">Password</label>
+        <input id="signinPassword" name="password" type="password"
+               autocomplete="current-password" required maxlength="256">
+      </div>
+      <p class="error" id="signinError" role="alert" hidden></p>
+      <button type="submit" class="btn btn-primary">Sign in</button>
+    </form>
+  </section>
+
+  <!-- Operator home -->
+  <section id="view-dashboard" class="view" hidden aria-labelledby="dashboard-heading">
+    <p class="eyebrow">OPERATOR WORKSPACE</p>
+    <h1 id="dashboard-heading">Dashboard</h1>
+    <p class="lede">Check registered traps, review capture status, and run a district forecast.</p>
+
+    <section class="dashboard-panel" aria-labelledby="dashboard-traps-heading">
+      <div class="panel-heading">
+        <div><p class="eyebrow">FIELD MONITORING</p><h2 id="dashboard-traps-heading">Your traps</h2></div>
+        <button type="button" class="btn btn-quiet" id="dashboardRefreshBtn">Refresh</button>
+      </div>
+      <p class="hint">Only traps assigned to your account appear here. An administrator can also look up a trap by ID.</p>
+      <p id="dashboardTrapMessage" class="meta" role="status">Loading trap details…</p>
+      <div id="dashboardTrapList" class="dashboard-traps"></div>
+      <div class="actions-row">
+        <button type="button" class="btn btn-secondary" id="dashboardCaptureBtn">Identify or photograph a trap</button>
+      </div>
+    </section>
+
+    <section class="dashboard-panel" aria-labelledby="forecast-heading">
+      <p class="eyebrow">DISTRICT FORECAST</p>
+      <h2 id="forecast-heading">Run a prediction</h2>
+      <p class="hint">Forecasts estimate district dengue cases for the next 3 months. Trap counts are shown separately and do not enter these models. Missing values may use the models' saved training statistics; they are not measured inputs.</p>
+      <form id="forecastForm" novalidate>
+        <div class="field">
+          <label for="forecastModel">Model</label>
+          <select id="forecastModel" name="model">
+            <option value="tree">Tree (LightGBM)</option>
+            <option value="epikd">EpiKD (KDA)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="forecastRegion">District BPS code</label>
+          <input id="forecastRegion" name="region" type="text" required maxlength="16" list="forecastDistricts"
+                 placeholder="search by district name or code" autocomplete="off" spellcheck="false">
+          <datalist id="forecastDistricts"></datalist>
+          <p class="hint">Select a district represented in the trained model, or enter its BPS code.</p>
+        </div>
+        <div class="field">
+          <label for="forecastMonth">Last month of input data</label>
+          <input id="forecastMonth" name="issue_month" type="month" required>
+          <p class="hint">The forecast starts in the following month.</p>
+        </div>
+        <fieldset class="radio-row">
+          <legend>How will you provide the monthly data?</legend>
+          <input id="forecastSourceCsv" type="radio" name="forecast_source" value="csv" checked>
+          <label for="forecastSourceCsv">Upload CSV</label>
+          <input id="forecastSourceManual" type="radio" name="forecast_source" value="manual">
+          <label for="forecastSourceManual">Enter on this page</label>
+        </fieldset>
+        <div id="forecastUploadFields">
+          <div class="field">
+            <label for="forecastPanel">Monthly data CSV</label>
+            <input id="forecastPanel" name="panel" type="file" accept=".csv,text/csv">
+            <p class="hint">Maximum 12 MiB. Include 24 months for the selected district and any available neighboring districts. Leave unknown values blank, not zero.</p>
+          </div>
+          <details class="forecast-help">
+            <summary>Required columns and units</summary>
+            <p class="hint"><code>date</code>, <code>bps_kode_2025</code>, <code>province</code>, <code>cases</code>, <code>population</code>, <code>rainfall</code> (mm/month), <code>tmin</code> and <code>tmax</code> (monthly mean daily min/max in °C), <code>dry_days</code> (days), <code>oni</code> (°C anomaly), <code>latitude</code>, <code>longitude</code>, <code>mean_mdpl</code> (metres), and <code>is_island</code> (0 or 1).</p>
+            <p class="hint">Provide a row for each of the selected district's 24 months. At least 12 months must have observed case counts. Use the correct province and district code. Neighbor data is optional; missing neighbors reduce coverage.</p>
+            <button type="button" class="btn btn-quiet" id="forecastTemplateBtn">Download blank 24-month template</button>
+          </details>
+        </div>
+        <div id="forecastManualFields" hidden>
+          <p class="hint">Enter one district's values below. Neighboring district data is not included with manual entry; the model treats it as missing. Use a CSV to include neighbors.</p>
+          <div class="field"><label for="forecastProvince">Province</label><input id="forecastProvince" type="text" maxlength="100" placeholder="trained province name"></div>
+          <div class="field"><label for="forecastIsland">Island district</label>
+            <select id="forecastIsland"><option value="">Choose 0 or 1</option><option value="0">0 · No</option><option value="1">1 · Yes</option></select>
+          </div>
+          <div class="field"><label for="forecastLatitude">Latitude in degrees <span class="optional">(optional)</span></label><input id="forecastLatitude" type="number" step="any"></div>
+          <div class="field"><label for="forecastLongitude">Longitude in degrees <span class="optional">(optional)</span></label><input id="forecastLongitude" type="number" step="any"></div>
+          <div class="field"><label for="forecastElevation">Mean elevation in metres <span class="optional">(optional)</span></label><input id="forecastElevation" type="number" step="any"></div>
+          <button type="button" class="btn btn-secondary" id="forecastGenerateBtn">Prepare 24 months</button>
+          <p id="forecastRowsMessage" class="hint">Enter the district and last input month first.</p>
+          <div id="forecastMonthlyRows" class="forecast-monthly-rows"></div>
+        </div>
+        <p class="error" id="forecastError" role="alert" hidden></p>
+        <p class="meta" id="forecastProgress" role="status" hidden></p>
+        <button type="submit" class="btn btn-primary" id="forecastRunBtn">Run forecast</button>
+      </form>
+      <section id="forecastResult" class="forecast-result" hidden aria-labelledby="forecastResultHeading">
+        <h3 id="forecastResultHeading">Forecast result</h3>
+        <p id="forecastResultMeta" class="meta"></p>
+        <div id="forecastResultList" class="forecast-months"></div>
+        <p class="hint">Research-model estimates, not confirmed case counts. Future accuracy and interval coverage are not established. The result is not saved after leaving or refreshing this page.</p>
+        <ul id="forecastLimitations" class="hint"></ul>
+      </section>
+    </section>
+  </section>
+
+  <!-- Trap identification -->
+  <section id="view-trap" class="view" hidden aria-labelledby="trap-heading">
+    <h1 id="trap-heading">Identify trap</h1>
+    <form id="trapLookupForm" class="lookup">
+      <div class="field">
+        <label for="trapIdInput">Trap ID</label>
+        <input id="trapIdInput" name="trap_id" type="text" required
+               maxlength="64" autocapitalize="characters" autocomplete="off"
+               placeholder="for example VD-001" spellcheck="false">
+      </div>
+      <button type="submit" class="btn btn-primary">Look up trap</button>
+    </form>
+    <p class="hint">Scan the housing QR label or type the printed trap ID. Unknown or wrong traps must be resolved before capture.</p>
+    <button type="button" class="btn btn-quiet" id="trapDashboardBtn">Back to dashboard</button>
+    <p class="error" id="trapError" role="alert" hidden></p>
+
+    <div id="trapCard" hidden>
+      <dl class="trap-facts">
+        <div><dt>Trap</dt><dd class="mono" id="trapIdValue"></dd></div>
+        <div><dt>District</dt><dd id="trapDistrict"></dd></div>
+        <div><dt>Site</dt><dd id="trapSite"></dd></div>
+        <div><dt>Placement</dt><dd id="trapPlacement"></dd></div>
+        <div><dt>Registered location</dt><dd id="trapLocation"></dd></div>
+        <div><dt>Deployment</dt><dd id="trapDeployment"></dd></div>
+        <div><dt>Design version</dt><dd id="trapDesign"></dd></div>
+      </dl>
+      <div class="actions-row">
+        <button type="button" class="btn btn-primary" id="trapConfirmBtn">Confirm this trap and site</button>
+        <button type="button" class="btn btn-quiet" id="trapRejectBtn">Wrong trap — resolve first</button>
+      </div>
+    </div>
+    <div class="actions-row" id="photoFirstRow">
+      <button type="button" class="btn btn-secondary" id="photoFirstBtn">Photograph first — identify from the photo</button>
+    </div>
+  </section>
+
+  <!-- Sample selection and service -->
+  <section id="view-samples" class="view" hidden aria-labelledby="samples-heading">
+    <h1 id="samples-heading">Samples at <span class="mono" id="samplesTrapId"></span></h1>
+    <p class="hint">Adult cards and egg strips are separate samples. Select the sample you photographed, or install a new surface.</p>
+
+    <fieldset class="sample-picker">
+      <legend>Select sample</legend>
+      <div id="sampleList" class="sample-list" role="radiogroup" aria-label="Installed samples"></div>
+      <p class="hint" id="sampleListEmpty" hidden>No active samples are installed at this trap. Install a new surface below.</p>
+    </fieldset>
+
+    <section class="block" aria-labelledby="savedUploadsHeading">
+      <h2 id="savedUploadsHeading">Saved uploads and reviews</h2>
+      <p class="hint">Reopen a saved photo after navigation or reload. This list includes retakes and reviewed photos.</p>
+      <p id="savedUploadsError" class="error" role="alert" hidden></p>
+      <div id="savedUploadList" class="sample-list"></div>
+      <p id="savedUploadsSummary" class="meta"></p>
+      <div class="actions-row">
+        <button id="uploadsPrevBtn" type="button" class="btn btn-quiet" disabled>Previous uploads</button>
+        <button id="uploadsNextBtn" type="button" class="btn btn-quiet" disabled>Next uploads</button>
+        <button id="uploadsRefreshBtn" type="button" class="btn btn-quiet">Refresh uploads</button>
+      </div>
+    </section>
+
+    <details class="block" id="serviceBlock" open>
+      <summary>Service the selected sample <span class="badge" id="serviceRevisionBadge"></span></summary>
+      <p class="hint">Record the removal time and condition before photographing the removed surface. The record revision must match.</p>
+      <form id="serviceForm" novalidate>
+        <div class="field">
+          <label for="removedAtInput">Removed at</label>
+          <input id="removedAtInput" name="removed_at" type="datetime-local" required>
+        </div>
+        <div class="field checkbox-field">
+          <input id="exposureKnownInput" name="exposure_known" type="checkbox" checked>
+          <label for="exposureKnownInput">Exposure interval is known (installation and removal times are reliable)</label>
+        </div>
+        <div class="field">
+          <label for="conditionNotesInput">Physical condition notes</label>
+          <input id="conditionNotesInput" name="condition_notes" type="text" maxlength="255"
+                 placeholder="for example: intact, dry, minor debris">
+        </div>
+        <p class="error" id="serviceError" role="alert" hidden></p>
+        <button type="submit" class="btn btn-secondary">Record removal</button>
+      </form>
+    </details>
+
+    <details class="block" id="installBlock">
+      <summary>Install a new collection surface</summary>
+      <form id="installForm" novalidate>
+        <div class="field">
+          <label for="sampleTypeInput">Surface type</label>
+          <select id="sampleTypeInput" name="sample_type" required>
+            <option value="adult_card">Adult sticky card</option>
+            <option value="egg_strip">Egg strip</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="installedAtInput">Installed at</label>
+          <input id="installedAtInput" name="installed_at" type="datetime-local" required>
+        </div>
+        <div class="field">
+          <label for="surfaceIdInput">Surface label <span class="optional">(required)</span></label>
+          <input id="surfaceIdInput" name="surface_id" type="text" maxlength="64" required
+                 placeholder="cartridge label for a card, strip label for a strip">
+          <p class="hint">Printed ID of the physical card or strip. Adult cards need a cartridge ID; egg strips need a strip ID.</p>
+        </div>
+        <div class="field">
+          <label for="exposedAreaInput">Exposed area in cm² <span class="optional">(optional)</span></label>
+          <input id="exposedAreaInput" name="exposed_area_cm2" type="number" inputmode="decimal"
+                 min="0.01" step="0.01" placeholder="for example 100">
+        </div>
+        <div class="field">
+          <label for="installNotesInput">Condition notes</label>
+          <input id="installNotesInput" name="condition_notes" type="text" maxlength="255">
+        </div>
+        <p class="error" id="installError" role="alert" hidden></p>
+        <button type="submit" class="btn btn-secondary">Create sample record</button>
+      </form>
+    </details>
+
+    <div class="actions-row">
+      <button type="button" class="btn btn-primary" id="toCaptureBtn" disabled>Photograph selected sample</button>
+      <button type="button" class="btn btn-quiet" id="samplesBackBtn">Different trap</button>
+    </div>
+  </section>
+
+  <!-- Photo capture -->
+  <section id="view-capture" class="view" hidden aria-labelledby="capture-heading">
+    <h1 id="capture-heading">Photograph <span class="mono" id="captureSampleId"></span></h1>
+    <p class="lede" id="captureSampleMeta"></p>
+    <ul class="protocol-list">
+      <li>Photograph the complete collection surface, square-on, with a scale marker.</li>
+      <li>Check focus, glare, debris and missing edges before confirming.</li>
+      <li>One complete image per sample for counting. Adult cards and egg strips are photographed separately.</li>
+    </ul>
+
+    <div class="capture-buttons">
+      <div class="capture-field">
+        <label for="cameraInput" class="btn btn-primary photo-label">Take picture</label>
+        <input id="cameraInput" name="camera" type="file" accept="image/jpeg,image/png" capture="environment" class="visually-file">
+      </div>
+      <div class="capture-field">
+        <label for="photoInput" class="btn btn-secondary photo-label">Upload photo</label>
+        <input id="photoInput" name="photo" type="file" accept="image/jpeg,image/png" class="visually-file">
+      </div>
+    </div>
+    <p class="hint">"Take picture" opens the rear camera on phones that support it; on other devices it opens the file picker. Both buttons run the same preview and container-QR check. Include the container QR and the whole collection surface in one photo.</p>
+    <p class="meta" id="qrOutcome" role="status" aria-live="polite" hidden></p>
+
+    <figure id="previewFigure" hidden>
+      <figcaption>Preview — check blur, glare and edges</figcaption>
+      <img id="previewImg" alt="Preview of the selected collection-surface photo">
+      <p class="meta" id="previewMeta"></p>
+    </figure>
+    <p class="error" id="photoError" role="alert" hidden></p>
+
+    <div class="actions-row" id="captureActions" hidden>
+      <button type="button" class="btn btn-primary" id="confirmUploadBtn">Confirm and upload</button>
+      <button type="button" class="btn btn-quiet" id="retakeBtn">Retake photo</button>
+    </div>
+    <div class="actions-row">
+      <button type="button" class="btn btn-quiet" id="captureBackBtn">Back</button>
+    </div>
+  </section>
+
+  <!-- Upload status and review -->
+  <section id="view-status" class="view" hidden aria-labelledby="status-heading">
+    <h1 id="status-heading">Upload and count</h1>
+    <p class="lede">Sample <span class="mono" id="statusSampleId"></span></p>
+
+    <p class="status-banner" id="statusBanner" role="status" aria-live="polite"></p>
+    <p class="meta" id="statusDetail"></p>
+    <p class="error" id="statusError" role="alert" hidden></p>
+
+    <div class="actions-row" id="uploadRetryActions" hidden>
+      <button type="button" class="btn btn-primary" id="retryUploadBtn">Retry upload (same photo)</button>
+      <button type="button" class="btn btn-quiet" id="retakeFromStatusBtn">Retake photo</button>
+    </div>
+
+    <div id="resultBlock" hidden>
+      <h2>Candidate result <span class="badge badge-cyan">immutable model output</span></h2>
+      <p>Candidate counts are model output for human review. They are not confirmed field measurements.</p>
+      <dl class="trap-facts">
+        <div><dt>Candidate count</dt><dd class="mono" id="candidateCount"></dd></div>
+        <div><dt>This photo's reviewed count</dt><dd class="mono" id="reviewedCount"></dd></div>
+        <div><dt>Captured at</dt><dd id="capturedAtOut"></dd></div>
+        <div><dt>Upload</dt><dd class="mono" id="uploadIdOut"></dd></div>
+      </dl>
+      <figure>
+        <figcaption>Annotated image (private; requires your trap grant)</figcaption>
+        <img id="annotationImg" alt="Annotated counting result with detected objects marked">
+      </figure>
+      <p><a id="originalLink" href="#">Open original photo</a></p>
+    </div>
+
+    <div class="actions-row">
+      <button id="reviewEditBtn" type="button" class="btn btn-secondary" hidden>Correct or replace this review</button>
+    </div>
+    <div id="reviewBlock" hidden>
+      <h2>Review decision</h2>
+      <p class="meta" id="reviewContext"></p>
+      <form id="reviewForm" novalidate>
+        <fieldset class="decision-picker">
+          <legend>Decision</legend>
+          <div class="radio-row">
+            <input type="radio" id="decisionAccept" name="decision" value="accepted" checked>
+            <label for="decisionAccept">Accept</label>
+            <input type="radio" id="decisionReject" name="decision" value="rejected">
+            <label for="decisionReject">Reject</label>
+          </div>
+        </fieldset>
+        <div class="field" id="correctedCountField">
+          <label for="correctedCountInput">Accepted count</label>
+          <p class="hint">Leave as the candidate count, or enter a corrected integer. The saved model output never changes.</p>
+          <input id="correctedCountInput" name="corrected_count" type="number" inputmode="numeric"
+                 min="0" step="1" placeholder="candidate count">
+        </div>
+        <div class="field" id="rejectionReasonField" hidden>
+          <label for="rejectionReasonInput">Rejection reason (required)</label>
+          <input id="rejectionReasonInput" name="rejection_reason" type="text" maxlength="255" required>
+        </div>
+        <div class="field checkbox-field">
+          <input id="reviewUsableExposure" name="usable_exposure" type="checkbox" checked>
+          <label for="reviewUsableExposure">Exposure interval is usable (required for a confirmed zero)</label>
+        </div>
+        <p class="meta" id="revisionNote"></p>
+        <p class="error" id="reviewError" role="alert" hidden></p>
+        <button type="submit" class="btn btn-primary">Submit review</button>
+        <button type="button" class="btn btn-quiet" id="reviewRefreshBtn">Refresh revision</button>
+      </form>
+    </div>
+
+    <div class="actions-row">
+      <button type="button" class="btn btn-quiet" id="statusBackBtn">Sample list</button>
+    </div>
+  </section>
+
+  <!-- Container QR outcome in the photo (conflicts and unreadable codes) -->
+  <section id="view-photo-id" class="view" hidden aria-labelledby="photo-id-heading">
+    <h1 id="photo-id-heading">Container QR in the photo</h1>
+    <p class="lede">The photo stays retained. Nothing is uploaded until a container is resolved and confirmed.</p>
+    <div id="photoIdConflict" hidden>
+      <p class="error" role="alert">The photo shows different container IDs. Resolve one explicitly or retake the photo.</p>
+      <div class="actions-row" id="photoIdConflictButtons"></div>
+      <div class="actions-row">
+        <button type="button" class="btn btn-quiet" id="photoIdConflictRetakeBtn">Retake photo</button>
+      </div>
+    </div>
+    <div id="photoIdProblem" hidden>
+      <p class="error" role="alert" id="photoIdProblemText"></p>
+      <div class="actions-row">
+        <button type="button" class="btn btn-primary" id="photoIdProblemRetakeBtn">Retake photo</button>
+        <button type="button" class="btn btn-quiet" id="photoIdManualBtn">Resolve trap manually</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Not configured / global error -->
+  <section id="view-error" class="view" hidden aria-labelledby="error-heading">
+    <h1 id="error-heading">Capture service unavailable</h1>
+    <p class="error" id="globalError" role="alert"></p>
+    <p class="hint">This page makes no claims about saved photos or counts while the service is unavailable. Nothing was uploaded.</p>
+    <button type="button" class="btn btn-secondary" id="errorRetryBtn">Try again</button>
+  </section>
+
+</main>
+
+<div class="sr-only" id="announcer" role="status" aria-live="polite"></div>
+</body>
+</html>

@@ -1,0 +1,3 @@
+# Preserve the vendored QR libraries and their licenses.
+VectorDock/capture/web/vendor/jsQR.js -text
+VectorDock/qr-labels/vendor/qrcode.js -text
