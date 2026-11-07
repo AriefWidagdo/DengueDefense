@@ -14,6 +14,13 @@ The capture system stores the photo and requests a SAM3 counting job. A reviewer
 
 The [hosted capture demo](https://vectordock-capture.pages.dev/) requires an authorized account. Its current `BUCK1` setup is a test fixture.
 
+### Demo Credentials (Hosted Capture App)
+
+For demo and evaluation purposes, you can sign in to the [hosted capture demo](https://vectordock-capture.pages.dev/) with:
+
+- **Username:** `operator`
+- **Password:** `abcd12345678`
+
 ## Play the game locally
 
 Install Node.js 22.5 or newer, then run:
