@@ -1,84 +1,137 @@
-# Dengue Defense — Epi-Pipeline
+# Dengue Defense (Epi-Pipeline)
 
-A dengue hackathon prototype in 3 parts: **the trap, the model, and the game**.
+This is my dengue hackathon project. It is built in three parts: **the mosquito trap, the forecasting model, and the decision game**.
 
 ```text
-Trap photo → capture app → SAM3 on Modal → candidate count → human review
+Trap photo -> capture app -> SAM3 on Modal -> candidate count -> human review
 
-EpiKD model + historical inputs → dengue forecast → decision game
+EpiKD model + historical inputs -> dengue forecast -> decision game
 ```
 
-The capture system stores the photo and requests a SAM3 counting job. A reviewer can accept, correct, or reject the candidate result. The game runs a trained EpiKD model in the browser and uses its forecasts in a simulated campaign.
+Here is the basic flow:
+1. **The Trap & Capture App:** You take a photo of a mosquito trap on your phone. The app saves the photo and sends it to a SAM3 vision job running on Modal to count the mosquitoes/eggs. A human reviewer can then accept, tweak, or reject that count.
+2. **The Model & Game:** The game runs a trained **EpiKD** forecasting model directly in the browser, using real historical data to generate dengue forecasts across a simulated campaign.
 
-**The two lines above are not connected:** trap counts do not enter the current EpiKD model or game. Counting accuracy and forecast performance in the field have not been established. Game intervention effects are rules, not model estimates.
-
-The [hosted capture demo](https://vectordock-capture.pages.dev/) requires an authorized account. Its current `BUCK1` setup is a test fixture.
+One quick heads-up before diving in: **those two pipelines aren't wired together yet.** The trap counts from the phone app don't feed into the current EpiKD model or the game. Field accuracy for the counter and real-world forecast performance haven't been proven out in production either, and the intervention effects inside the game are game rules rather than learned causal estimates.
 
 ### Demo Credentials (Hosted Capture App)
 
-For demo and evaluation purposes, you can sign in to the [hosted capture demo](https://vectordock-capture.pages.dev/) with:
+If you want to try the [hosted capture demo](https://vectordock-capture.pages.dev/) for evaluation, you can log in with:
 
 - **Username:** `operator`
 - **Password:** `abcd12345678`
 
-## Play the game locally
+*(Note: The current `BUCK1` trap setup on the live demo is just a test fixture.)*
 
-Install Node.js 22.5 or newer, then run:
+---
+
+## How to run things locally
+
+### Play the game locally
+
+You'll need Node.js 22.5 or newer. Run:
 
 ```bash
 cd MainGame
 node dev-server.mjs
 ```
 
-Open [http://127.0.0.1:4173](http://127.0.0.1:4173) on the same computer. The local leaderboard uses an in-memory database. Scores disappear when the server stops.
+Then open [http://127.0.0.1:4173](http://127.0.0.1:4173) in your browser. The local leaderboard uses an in-memory database, so scores wipe whenever you stop the server.
 
-## Run the capture app locally
+### Run the capture app locally
 
-See [the capture setup](VectorDock/capture/README.md) for the backend and phone interface. The local setup uses test identities and a test trap. It does not contact Modal; counting jobs fail rather than produce a fake result.
+Check out [VectorDock/capture/README.md](VectorDock/capture/README.md) for how to spin up the backend and phone UI. The local dev setup uses dummy accounts and a test trap. It does not talk to Modal by default, so counting jobs will fail cleanly instead of making up fake numbers.
 
-A live counting setup requires a database, a dedicated capture volume, a deployed SAM3 service, its separately supplied checkpoint, and private server-side credentials. See [the SAM3 notes](SAM3/README.md). The model checkpoint and cloud credentials are not included in this repository.
+If you want live counting to work, you need a database, a storage volume, a deployed SAM3 service with its model checkpoint, and private server credentials. See [SAM3/README.md](SAM3/README.md) for details (the heavy checkpoints and cloud keys aren't committed to this repo).
 
-## The 3 parts
+---
 
-### 1. The trap
+## Breakdown of the 3 parts
 
-- [VectorDock/capture/](VectorDock/capture/) — phone interface, capture API, processing jobs, and human review.
-- [VectorDock/qr-labels/](VectorDock/qr-labels/) — local tool for printing trap labels.
-- [SAM3/](SAM3/) — Modal object-counter source and command-line client.
+### 1. The Trap
 
-### 2. The model
+- [VectorDock/capture/](VectorDock/capture/) - The mobile web UI, backend API, job queue, and human review screen.
+- [VectorDock/qr-labels/](VectorDock/qr-labels/) - A small utility for printing QR code labels to stick on physical traps.
+- [SAM3/](SAM3/) - The Modal object-counting service and CLI client.
 
-I built **EpiKD** for one narrow job: I give it the last 24 months for a district, and it forecasts that district's case count 1, 2, and 3 months ahead. [EpiKD_Experiment.py](EpiKD_Experiment.py) is where I train and evaluate it.
+### 2. The Model (EpiKD)
 
-**The data I use.** I train on an audited monthly panel I put together covering 514 Indonesian districts (2025 BPS boundaries) across 252 months — January 2004 to December 2024, 38 provinces. For each district-month I have the reported case count, population, and climate (rainfall, minimum/maximum temperature, dry days, and the ONI El Niño index), plus fixed geography (latitude, longitude, elevation, island flag) and a shared-border adjacency matrix between districts. I don't include that panel in this repo (see *Research files and privacy* below), so you can't reproduce my numbers just by cloning this. I also left in a `--mode synthetic` fallback that generates seasonal dummy series. I only use it to check that the code runs end to end; I never treat results from it as evidence of anything.
+I built **EpiKD** to do one specific job: you hand it the last 24 months of data for a district, and it predicts that district's dengue case counts 1, 2, and 3 months into the future. All the training and evaluation code lives in [EpiKD_Experiment.py](EpiKD_Experiment.py).
 
-I run everything on an "as of" basis, because I found it way too easy to accidentally cheat at forecasting. If I issue a forecast at month *t*, I only let it see what would actually have been published by then, I can simulate reporting delays, and I fit every scaler and threshold on the training period only. I lock my splits by calendar date — I fit through 2020, validate on 2021, calibrate my alarm thresholds on 2022, and I only touch 2023–24 for the final test. I never shuffle rows randomly into train and test, because that leaks the future straight into training and makes the scores look better than they are.
+#### What data it uses
+I trained the model on an audited monthly dataset I put together covering all 514 districts in Indonesia (using 2025 BPS boundaries) over 21 years — 252 months from January 2004 to December 2024 across 38 provinces. For every district and month, it tracks:
+- Reported dengue cases and population size
+- Climate numbers: rainfall, min/max temperature, dry days, and the ONI El Nino index
+- Static geography: latitude, longitude, elevation, whether it's on an island, and a border-adjacency map showing which districts touch each other
 
-**How I built it.** I turn each forecast into a 24-month window. I represent a month with a handful of features: log case counts (raw, and scaled to the district's typical size), whether I actually observed that month and how stale it is, the season as sine/cosine, each climate variable with its own missing-data flag, and — if I turn the spatial option on — a population-weighted summary of what's happening in bordering districts. I feed that sequence into two small blocks built around a recurrent matrix memory, which I borrowed from Kimi Delta Attention (KDA), a recent linear-attention design from language modelling.
+That raw dataset isn't in this public repo (see the privacy section at the bottom), so cloning the repo won't reproduce my exact paper numbers out of the box. However, I included a `--mode synthetic` flag that generates seasonal dummy data so anyone can run the training pipeline end-to-end and verify the code works.
 
-The memory is the part I actually care about. Instead of compressing history into a single vector, I have each block keep a small key→value matrix — I think of it as a notebook of associations it has picked up from past months. Every new month, I first let the notebook *decay*: each channel forgets at its own learned rate, so some associations fade in a month or two while others stick around across seasons. Then I apply the delta rule: I check what the notebook currently predicts for this month's key, I compare it with what actually arrived, and I only write back the *error*, scaled by a learned gate. That way I correct stale patterns precisely instead of blindly overwriting them or leaving them to linger. I round each block out with a short causal convolution, gating, and a small feed-forward layer. Finally, I use three separate output heads that read the final state and each give me a negative-binomial distribution (a mean μ and a dispersion κ) for one horizon — directly, without feeding my own predictions back in as inputs. Because I get a full distribution rather than a point guess, I can pull the median, my prediction intervals, and the probability of crossing a district's outbreak threshold from the same numbers. I learn that threshold from training data only, and I deliberately didn't bolt on a separate outbreak classifier that could end up disagreeing with my own count forecast.
+#### Keeping the evaluation honest (no time-travel cheating)
+It is super easy to accidentally cheat in time-series forecasting, so I set everything up on a strict "as of" timeline. When the model makes a forcast at month *t*, it only sees data that would have actually been available at that moment (including simulated reporting delays). Every scaler and outbreak threshold is fit strictly on the training split:
+- **Train:** up through 2020
+- **Validation:** 2021
+- **Threshold calibration:** 2022
+- **Final test:** 2023-2024
 
-**The idea I'm testing.** I want to be straight about this: none of the ingredients are new on their own. KDA exists, count likelihoods exist, climate features exist. What I don't know yet — and what I'm testing — is whether this kind of memory actually helps *here*, on short, noisy, seasonal disease series. My hypothesis is about learning dynamics, not biology: if I let different channels forget at different speeds, a single model I share across all 514 districts might hold onto slow seasonal structure in some channels while reacting quickly in others when a district turns, and pooling all my districts together might beat fitting 514 separate models when each district's usable history is short. I'm not claiming a channel "is" a mosquito lifespan or an immunity period — I have no evidence for that, and I don't read it that way.
+I never shuffle rows randomly between train and test, because doing that leaks future outbreak patterns backward and inflates the scores.
 
-So I set the experiment up to be able to prove myself wrong. I compare EpiKD against parameter-matched GRU and Transformer versions of itself (same size, same output heads, same data and features), a scalar-decay ablation where I remove exactly the per-channel forgetting and nothing else, a no-convolution ablation, a LightGBM baseline, and plain seasonal-naive forecasts. I score all of them on the same windows with proper probabilistic metrics (weighted interval score, calibration, interval coverage), and I run learning curves where I only give them 25%, 50%, and 75% of the history, because that's the low-data claim I actually want to test. If the GRU or the trees beat me, then that's the answer — I only keep the delta memory if it earns its place against those controls, especially when I starve it of training data.
+#### How the architecture works (in plain English)
+For each prediction, the model looks at a 24-month sliding window. Each month is represented by a bundle of features: log case counts (both raw and scaled to that district's normal baseline), whether the data for that month was actually observed or is stale, sine/cosine waves for the time of year, climate variables (with missing-data flags), and an optional population-weighted summary of neighboring districts.
 
-I also wired up an optional forecast API in the capture app that can serve a trained EpiKD (or my tree baseline) over monthly history you upload, but it needs trusted model artifacts that I supply separately and don't include in this source tree. I keep it disabled by default and I haven't verified it as a live service. It takes the monthly history I give it; it never touches trap counts.
+That 24-month sequence passes through two small neural blocks built around a recurrent matrix memory borrowed from **Kimi Delta Attention (KDA)**, which comes from recent linear-attention research in language models.
 
-### 3. The game
+Here is why I used that memory setup instead of a standard recurrent vector:
+- **A "notebook" instead of a single squished vector:** Each block keeps a small key-to-value matrix, kind of like a scratchpad of patterns it has noticed over past months.
+- **Different forgetting speeds:** Every time a new month comes in, the scratchpad decays first. Each channel learns its own decay rate, so some channels can forget short-term noise in a month or two while other channels hold onto multi-season trends.
+- **The Delta Rule (only writing down the surprise):** Before updating the memory, the model checks what its scratchpad *already* expects for the new month and compares it to what actually happened. It only writes back the **error** (the difference), scaled by a learned gate. That lets it fix stale assumptions cleanly instead of blindly overwriting old memory.
 
-- [MainGame/](MainGame/) — the working game, local test server, deployment copy, and leaderboard Worker.
-- The game contains its own trained model and historical demo inputs in its HTML. It does not need the removed experiment exports. The game source and deployment copy remain unchanged.
+After a short causal convolution and feed-forward layer, three seperate output heads read the final state to predict 1, 2, and 3 months ahead all at once (instead of feeding predictions back into itself one month at a time).
 
-## Research files and privacy
+Instead of spitting out a single number, each head outputs a full **Negative Binomial distribution** (a mean $\mu$ and dispersion $\kappa$). Having a full probability distribution means I can pull the median case forecast, the uncertainty intervals (like 10th to 90th percentile), and the exact probability of crossing a local outbreak threshold all from the same output — without needing a second classifier model that might contradict the case count model.
 
-The top-level `data/` and `outputs_epikd_*/` directories are excluded from Git. Keep research inputs, training outputs, captured photos, local databases, and credentials outside the public source tree. The QR test images are generated fixtures, not field photos.
+#### What I'm actually testing here
+To be totally upfront: none of these building blocks are brand new inventions on their own. KDA exists, negative binomial count models exist, and climate features are standard. What I wanted to test is whether this specific type of delta memory actually helps on short, noisy, highly seasonal disease data.
 
-**The game still embeds historical demo inputs.** Removing those inputs requires a separate game change. Removing files from the current source tree also does not remove copies from older commits.
+My hypothesis is about how the model learns when data is scarce: by pooling all 514 districts together and letting different memory channels forget at different speeds, one shared model might keep slow seasonal rhythms in some channels while reacting fast to sudden local spikes in others.
 
-## Checks
+To make sure I'm not fooling myself, I benchmark EpiKD against tough controls in [EpiKD_Experiment.py](EpiKD_Experiment.py):
+- Parameter-matched **GRU** and **Transformer** models (same size, same features, same output heads)
+- An ablation where I strip out the per-channel forgetting (scalar decay only)
+- A no-convolution ablation
+- **LightGBM** gradient-boosted trees
+- Simple seasonal-naive baselines
 
-From `VectorDock/capture/backend`, create a Python virtual environment, install `requirements.txt`, and run `python -m pytest tests -q`. Tests that need the omitted research dataset or optional forecast dependencies skip when they are unavailable.
+I score all of them using proper probabilistic metrics (Weighted Interval Score, calibration, and coverage), and I also run learning curves with only 25%, 50%, and 75% of the training history. If a plain GRU or LightGBM beats the delta memory, then the simpler model wins.
 
-From `MainGame`, run `python -m unittest discover -s tests -v`. The game browser tests require Playwright with Chromium and Node.js 22.5 or newer.
+*(There is also an optional forecast API endpoint wired into the capture backend that can run a trained EpiKD or tree model on uploaded monthly history, though it's disabled by default and doesn't use trap counts.)*
 
-Cloud configuration files retain project-specific resource names, a database ID, and public service addresses. Check them before deploying to avoid changing existing resources. Keep secrets outside this repository.
+### 3. The Game
+
+- [MainGame/](MainGame/) - The playable browser game, local dev server, deployment build, and Cloudflare Worker leaderboard.
+- The game bundles its own trained model weights and historical demo inputs right inside the HTML, so it works out of the box without needing the private research CSVs.
+
+---
+
+## Research files & privacy
+
+The raw `data/` and `outputs_epikd_*/` folders are ignored by Git. Real research datasets, trained checkpoints, field trap photos, local SQLite databases, and API keys stay outside this public repo. (The QR trap images you see in the repo are synthetic test fixtures, not real field photos.)
+
+Note that `MainGame` still embeds historical district numbers for its playable campaign. Also, keep an eye on the cloud config files if you deploy your own copy, since they currently reference my project's resource names and public URLs.
+
+## Running the tests
+
+To test the capture backend:
+```bash
+cd VectorDock/capture/backend
+python -m venv .venv
+# activate your venv, install requirements.txt, then:
+python -m pytest tests -q
+```
+*(Tests that need the private research dataset or optional ML packages will automatically skip if they aren't installed.)*
+
+To test the game:
+```bash
+cd MainGame
+python -m unittest discover -s tests -v
+```
+*(The automated browser tests need Node.js 22.5+ and Playwright with Chromium installed.)*
