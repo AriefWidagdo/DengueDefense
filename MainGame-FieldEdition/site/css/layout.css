@@ -1,0 +1,595 @@
+/* ============================================================
+   Dengue Defense — Field Edition · Command-Center Layout
+   Spec 02 §2 — full-viewport tactical canvas stage, floating
+   telemetry strip (#hud), collapsible operations rail (#panel),
+   EpiKD Lab slide-over (#epikdLabDrawer).
+
+   BODY MODE / PHASE CLASSES (set by js/main.js + modes):
+     body.mode-operations   -> Mode 1 (Monsoon Operations)
+     body.mode-crisis_board -> Mode 2 (Crisis Board)
+     body.mode-blitz        -> Mode 3 (Outbreak Blitz): #panel is
+                               HIDDEN ENTIRELY (display:none) so the
+                               full arena is unobstructed.
+     body.phase-wave        -> Active action wave (Mode 1 wave /
+                               Mode 3): #panel collapses to the slim
+                               bottom-center Field Gadget Dock.
+                               (An explicit #panel.gadget-dock class
+                               applies the same collapsed treatment.)
+     body.phase-plan        -> Planning / Crisis Board: full rail.
+
+   #epikdLabDrawer sits ABOVE modals (--z-modal:50) and BELOW toasts
+   (--z-toast:70): z-index = calc(var(--z-modal) + 10) = 60. The
+   --z-drawer:30 token remains reserved for slide-under rails.
+   ============================================================ */
+
+/* ---------- Base stage ---------- */
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  height: 100dvh;
+  overflow: hidden;
+  background: var(--bg-body);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Full-viewport canvas stage */
+#canvas {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-canvas);
+  display: block;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  touch-action: none;
+  background: var(--bg-body);
+}
+
+/* 40px tactical coordinate grid + vignette overlay (sits above canvas, below HUD).
+   Grid lines: rgba(56, 189, 248, 0.04) every 40px on both axes. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: calc(var(--z-canvas) + 1);
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(56, 189, 248, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(56, 189, 248, 0.04) 1px, transparent 1px);
+  background-size: 40px 40px;
+  background-position: center center;
+}
+
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: calc(var(--z-canvas) + 2);
+  pointer-events: none;
+  background: radial-gradient(ellipse 120% 90% at 50% 42%, transparent 55%, rgba(4, 9, 12, 0.55) 100%);
+}
+
+/* ---------- Floating top telemetry strip (#hud) ---------- */
+#hud {
+  --hud-h: 56px;
+  position: fixed;
+  top: max(10px, env(safe-area-inset-top, 0px));
+  left: 12px;
+  right: 12px;
+  z-index: var(--z-hud);
+  max-height: var(--hud-h);
+  height: var(--hud-h);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0 2px;
+  pointer-events: none;              /* clusters re-enable pointer events */
+  font-family: var(--font-sans);
+}
+
+/* Three translucent blur clusters */
+.ddh-cluster {
+  pointer-events: auto;              /* js-scaffolded HUD clusters re-enable clicks */
+}
+.hud-cluster {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 100%;
+  max-height: var(--hud-h);
+  padding: 6px 12px;
+  background: var(--bg-glass);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-panel);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.hud-cluster--left   { justify-content: flex-start; }
+.hud-cluster--center { justify-content: center; flex: 0 1 auto; }
+.hud-cluster--right  { justify-content: flex-end; }
+
+/* Left cluster: mode badge + scenario/month/week pill + seed tag */
+.hud-mode-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.38);
+  color: var(--accent-primary);
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.hud-mode-badge svg { width: 14px; height: 14px; }
+.hud-scenario-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+.hud-seed-tag {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.64rem;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-sm);
+  padding: 3px 6px;
+  text-transform: uppercase;
+}
+
+/* Center cluster: core vitals (surge gauge, budget/AP, combo/integrity) */
+.hud-vitals {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.hud-vital {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-width: 0;
+}
+.hud-vital-label {
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  line-height: 1;
+}
+.hud-vital-value {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.1;
+}
+.hud-vital-value small { font-size: 0.62rem; color: var(--text-secondary); font-weight: 600; }
+.hud-vital-sep {
+  width: 1px;
+  align-self: stretch;
+  background: var(--border-subtle);
+}
+
+/* Hospital Surge Gauge (bar + exact numbers) */
+.hud-surge {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 150px;
+}
+.hud-surge-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.hud-surge-label {
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.hud-surge-value {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.hud-surge-track {
+  position: relative;
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: var(--bg-elevated);
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+}
+.hud-surge-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: var(--surge, 0%);
+  border-radius: inherit;
+  background: var(--status-safe);
+  transition: width 0.35s ease;
+}
+.hud-surge-fill.is-warn     { background: var(--status-warn); }
+.hud-surge-fill.is-danger   { background: var(--status-danger); }
+.hud-surge-fill.is-critical { background: var(--status-critical); }
+
+/* Right cluster: language switch, audio, haptics, EpiKD Lab, pause */
+.hud-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.lang-switch {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+  background: var(--bg-elevated);
+}
+.lang-switch button {
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--text-secondary);
+  padding: 5px 9px;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.lang-switch button[aria-pressed="true"],
+.lang-switch button.is-active {
+  background: var(--accent-primary);
+  color: var(--on-accent);
+}
+.icon-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+.icon-toggle:hover { color: var(--text-primary); border-color: var(--border-strong); }
+.icon-toggle[aria-pressed="true"],
+.icon-toggle.is-active {
+  color: var(--accent-hydro);
+  border-color: rgba(56, 189, 248, 0.45);
+  background: rgba(56, 189, 248, 0.1);
+}
+.icon-toggle svg { width: 16px; height: 16px; }
+
+.epikd-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: var(--radius-pill);
+  border: 1px solid rgba(45, 212, 191, 0.4);
+  background: rgba(45, 212, 191, 0.1);
+  color: var(--accent-bio);
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.15s ease, box-shadow 0.15s ease;
+}
+.epikd-pill:hover { background: rgba(45, 212, 191, 0.18); box-shadow: 0 0 12px rgba(45, 212, 191, 0.25); }
+.epikd-pill svg { width: 14px; height: 14px; }
+
+.hud-pause {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+.hud-pause:hover { border-color: var(--border-strong); }
+
+/* ---------- Collapsible tactical operations rail (#panel) ---------- */
+#panel {
+  position: fixed;
+  z-index: calc(var(--z-hud) - 5);   /* 15 — above canvas, below HUD/modals */
+  top: calc(max(10px, env(safe-area-inset-top, 0px)) + 68px);
+  right: 12px;
+  bottom: 12px;
+  width: 340px;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-glass);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-panel);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  overflow: hidden;
+  transition: transform 0.3s ease, opacity 0.3s ease, top 0.3s ease, bottom 0.3s ease;
+}
+.panel-inner {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+.panel-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+}
+.panel-section-title {
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.panel-footer {
+  padding: 12px 14px calc(12px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--border-subtle);
+  background: rgba(11, 21, 25, 0.6);
+}
+
+/* Drag/tap handle — hidden on desktop, shown on <900px bottom sheet */
+.panel-handle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 40px;
+  padding: 6px 12px;
+  background: var(--bg-elevated);
+  border: 0;
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  font-size: 0.64rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.panel-handle::before {
+  content: "";
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 44px;
+  height: 4px;
+  border-radius: var(--radius-pill);
+  background: var(--border-strong);
+}
+.panel-handle { position: relative; padding-top: 14px; }
+
+/* --- Wave mode / Field Gadget Dock (Mode 1 wave & Mode 3) ---
+   Slim bottom-center dock; 85%+ of screen unobstructed. */
+body.phase-wave #panel,
+#panel.gadget-dock {
+  top: auto;
+  bottom: max(12px, env(safe-area-inset-bottom, 0px));
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+  width: auto;
+  min-width: min(420px, calc(100vw - 24px));
+  max-width: calc(100vw - 24px);
+  max-height: none;
+  flex-direction: row;
+  align-items: center;
+  border-radius: var(--radius-lg);
+  padding: 8px 12px;
+}
+body.phase-wave #panel .panel-inner,
+#panel.gadget-dock .panel-inner {
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  overflow: visible;
+  padding: 0;
+}
+body.phase-wave #panel .panel-section,
+#panel.gadget-dock .panel-section {
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  background: transparent;
+  border: 0;
+}
+body.phase-wave #panel .panel-footer,
+#panel.gadget-dock .panel-footer { display: none; }
+body.phase-wave #panel .panel-handle,
+#panel.gadget-dock .panel-handle { display: none; }
+
+/* Swat blade active indicator + spray charge ring inside the dock */
+.gadget-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.gadget-indicator.is-active {
+  border-color: rgba(56, 189, 248, 0.5);
+  color: var(--accent-hydro);
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.2);
+}
+.spray-charge {
+  --charge: 0%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: conic-gradient(var(--accent-hydro) var(--charge), var(--bg-elevated) var(--charge));
+  position: relative;
+}
+.spray-charge::after {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border-radius: 50%;
+  background: var(--bg-surface);
+}
+.spray-charge svg { position: relative; z-index: 1; width: 18px; height: 18px; color: var(--accent-hydro); }
+
+/* --- Blitz mode: operations rail hidden entirely --- */
+body.mode-blitz #panel { display: none !important; }
+
+/* ---------- Narrow viewports (<900px): bottom sheet ---------- */
+@media (max-width: 899px) {
+  #hud {
+    left: 6px;
+    right: 6px;
+    gap: 6px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+  }
+  #hud::-webkit-scrollbar { display: none; }
+  .hud-cluster { padding: 4px 8px; gap: 6px; border-radius: var(--radius-md); }
+  .hud-vitals { gap: 8px; }
+  .hud-surge { min-width: 110px; }
+  .hud-seed-tag { display: none; }
+  .hud-vital-sep { display: none; }
+
+  #panel {
+    top: auto;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    max-width: none;
+    height: auto;
+    max-height: 52vh;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    border-left: 0;
+    border-right: 0;
+    border-bottom: 0;
+    transform: none;
+    transition: transform 0.32s ease;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .panel-handle { display: flex; }
+  /* Collapsed: only the handle + a peek of content remains */
+  #panel.collapsed { transform: translateY(calc(100% - 46px)); }
+
+  body.phase-wave #panel,
+  #panel.gadget-dock {
+    left: 0;
+    right: 0;
+    bottom: 0;
+    transform: none;
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    overflow-x: auto;
+  }
+  body.mode-blitz #panel { display: none !important; }
+}
+
+/* ---------- EpiKD Lab slide-over drawer (#epikdLabDrawer) ----------
+   Above modals (z 50), below toasts (z 70) -> 60. */
+#epikdLabDrawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  height: 100vh;
+  height: 100dvh;
+  width: min(460px, 100vw);
+  z-index: calc(var(--z-modal) + 10);
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-surface);
+  border-left: 1px solid var(--border-strong);
+  box-shadow: var(--shadow-panel);
+  transform: translateX(105%);
+  visibility: hidden;
+  transition: transform 0.32s ease, visibility 0.32s ease;
+}
+#epikdLabDrawer.open,
+#epikdLabDrawer[aria-hidden="false"] {
+  transform: translateX(0);
+  visibility: visible;
+}
+
+/* Full-screen scrim behind the drawer (optional element owned by ui/epikd-lab.js) */
+.epikd-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: calc(var(--z-modal) + 9);
+  background: var(--bg-scrim);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+.epikd-scrim.open { opacity: 1; pointer-events: auto; }
+
+@media (prefers-reduced-motion: reduce) {
+  #panel, body.phase-wave #panel, #panel.gadget-dock,
+  #epikdLabDrawer, .epikd-scrim, .hud-surge-fill {
+    transition: none !important;
+  }
+}

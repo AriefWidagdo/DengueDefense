@@ -1,0 +1,8 @@
+{
+  "name": "quiet-resonance-9b9e",
+  "compatibility_date": "2026-01-15",
+  "workers_dev": true,
+  "preview_urls": true,
+  "assets": { "directory": "./site" },
+  "routes": [{ "pattern": "dengue.datajoget.my.id", "custom_domain": true }]
+}

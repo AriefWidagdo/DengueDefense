@@ -1,0 +1,93 @@
+/* ============================================================
+   Dengue Defense — Field Edition · Design Tokens
+   Spec 02 §1 — Deep Cartographic Slate-Teal command palette.
+   Load order: tokens.css -> layout.css -> components.css
+   All numeric KPI styling uses var(--font-mono) + tabular-nums
+   (see .num / .kpi utilities below). Uppercase micro-labels
+   use .micro-label. No external font @import: fallback stacks
+   (Bahnschrift / Segoe UI / Cascadia Mono) render crisp offline.
+   ============================================================ */
+
+:root {
+  /* Surface Hierarchy — Deep Cartographic Slate-Teal (replaces #111112 / #1F1F22) */
+  --bg-body:        #0B1519;
+  --bg-surface:     #132229;
+  --bg-elevated:    #1A2E38;
+  --bg-glass:       rgba(11, 21, 25, 0.86);
+  --bg-scrim:       rgba(6, 12, 15, 0.78);
+
+  /* Crisp Blueprint Borders */
+  --border-subtle:  rgba(148, 210, 230, 0.14);
+  --border-strong:  #2E4D5B;
+  --border-focus:   #38BDF8;
+
+  /* Typography Ink */
+  --text-primary:   #E6F0F2;
+  --text-secondary: #8FA8B2;
+  --text-muted:     #5B737E;
+
+  /* Semantic Action & Domain Accents */
+  --accent-primary: #F59E0B;  /* Field Command Amber — primary CTAs */
+  --on-accent:      #0A1317;  /* Dark slate ink on Amber */
+  --accent-hydro:   #38BDF8;  /* Hydro-Sensor Cyan — rainfall, river corridors, intel */
+  --accent-bio:     #2DD4BF;  /* Bio-Control Teal — Wolbachia / PSN ecological layers */
+
+  /* Epidemiological Threat Ramp */
+  --status-safe:     #10B981;
+  --status-warn:     #F59E0B;
+  --status-danger:   #EF4444;
+  --status-critical: #D946EF;
+
+  /* Typography Families (self-sufficient system/clean geometric fallback stacks) */
+  --font-display: 'Space Grotesk', 'Bahnschrift', 'Segoe UI', system-ui, sans-serif;
+  --font-sans:    'Plus Jakarta Sans', 'Inter', 'Segoe UI', system-ui, sans-serif;
+  --font-mono:    'JetBrains Mono', 'Cascadia Mono', 'Consolas', monospace;
+
+  /* Radii & Shadows */
+  --radius-sm:  4px;
+  --radius-md:  8px;
+  --radius-lg:  12px;
+  --radius-pill: 999px;
+  --shadow-panel: 0 12px 32px rgba(0, 0, 0, 0.45);
+  --glow-amber:   0 0 18px rgba(245, 158, 11, 0.25);
+
+  /* Z-Index Layers */
+  --z-canvas:  1;
+  --z-hud:     20;
+  --z-drawer:  30;
+  --z-modal:   50;
+  --z-toast:   70;
+}
+
+:root { color-scheme: dark; }
+
+/* ---------- Numeric KPIs — always mono + tabular figures ---------- */
+.num,
+.kpi,
+[data-kpi],
+.hud-vital-value,
+.lb-score,
+.lb-rank,
+.end-grade,
+.report-stat-value {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+/* ---------- Uppercase micro-labels (district tags, stamps, bearings) ---------- */
+.micro-label,
+.eyebrow {
+  font-family: var(--font-sans);
+  font-size: 0.72rem;
+  line-height: 1.2;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+.micro-label--muted,
+.eyebrow--muted { color: var(--text-muted); }
+.micro-label--hydro { color: var(--accent-hydro); }
+.micro-label--bio { color: var(--accent-bio); }
+.micro-label--amber { color: var(--accent-primary); }

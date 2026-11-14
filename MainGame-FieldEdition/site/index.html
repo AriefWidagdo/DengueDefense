@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0B1519">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Dengue Defense">
+<title>Dengue Defense — Field Edition</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><path fill='%23F59E0B' d='M16 2l12 5v9c0 8.2-5 13.4-12 16.4C9 29.4 4 24.2 4 16V7z'/><path fill='%230B1519' d='M16 6l8 3.4V16c0 5.6-3.2 9.3-8 12-4.8-2.7-8-6.4-8-12V9.4z'/><path d='M11.5 16.6l3.2 3.2 6-7' stroke='%23F59E0B' stroke-width='2.1' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+<link rel="stylesheet" href="./css/tokens.css">
+<link rel="stylesheet" href="./css/layout.css">
+<link rel="stylesheet" href="./css/components.css">
+<script type="module" src="./js/main.js"></script>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs id="spriteDefs">
+    <linearGradient id="gradAmber" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FBBF24"/><stop offset="1" stop-color="#F59E0B"/></linearGradient>
+    <linearGradient id="gradSurge" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#10B981"/><stop offset="0.6" stop-color="#FBBF24"/><stop offset="1" stop-color="#EF4444"/></linearGradient>
+    <pattern id="tacGrid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0H0v40" fill="none" stroke="#38BDF8" stroke-opacity="0.07" stroke-width="1"/></pattern>
+  </defs>
+</svg>
+<canvas id="canvas" aria-label="Tactical corridor map"></canvas>
+
+<header id="hud" aria-label="Telemetry">
+  <div class="hud-cluster hud-cluster--left">
+    <span class="hud-mode-badge" id="hudModeBadge"><svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path fill="currentColor" d="M4 20l6-14 2.5 6.5L19 10l-9 10z"/></svg><span id="hudModeText">Operations</span></span>
+    <span class="hud-scenario-pill" id="hudScenarioPill">NOV</span>
+    <span class="hud-seed-tag" id="hudSeedTag">SEED</span>
+  </div>
+  <div class="hud-cluster hud-cluster--center">
+    <div class="hud-vitals">
+      <div class="hud-vital" id="hudFundsWrap"><span class="hud-vital-label" data-i18n="hud.funds">Funds</span><span class="hud-vital-value" id="hudFunds">18</span></div>
+      <div class="hud-vital" id="hudApWrap" hidden><span class="hud-vital-label" data-i18n="hud.ap">AP</span><span class="hud-vital-value" id="hudAp">3</span></div>
+      <div class="hud-surge"><div class="hud-surge-head"><span class="hud-surge-label" data-i18n="hud.icuLoad">ICU Load</span><span class="hud-surge-value" id="hudIcuValue">0/240</span></div><div class="hud-surge-track"><div class="hud-surge-fill" id="hudSurgeFill" style="--surge:0%"></div></div></div>
+      <div class="hud-vital"><span class="hud-vital-label" data-i18n="hud.score">Score</span><span class="hud-vital-value" id="hudScore">0</span></div>
+    </div>
+  </div>
+  <div class="hud-cluster hud-cluster--right"><div class="hud-controls">
+    <div class="lang-switch" role="group" aria-label="Language"><button type="button" id="langEnBtn" aria-pressed="true">EN</button><button type="button" id="langIdBtn" aria-pressed="false">ID</button></div>
+    <button type="button" class="icon-toggle" id="hudAudioBtn" aria-pressed="true" aria-label="Audio"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l6 5V4L8 9H4z"/><path fill="none" stroke="currentColor" stroke-width="2" d="M17.5 8.5a5 5 0 0 1 0 7"/></svg></button>
+    <button type="button" class="icon-toggle" id="hudHapticsBtn" aria-pressed="true" aria-label="Haptics"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M13 2L5 14h5l-1 8 9-12h-6z"/></svg></button>
+    <button type="button" class="epikd-pill" id="hudEpikdBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M9 3h6M10 3v6l-5.5 9.5A2.4 2.4 0 0 0 6.6 22h10.8a2.4 2.4 0 0 0 2.1-3.5L14 9V3"/></svg><span data-i18n="hud.epikd">EpiKD Lab</span></button>
+    <button type="button" class="hud-pause" id="hudPauseBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg><span data-i18n="hud.pause">Pause</span></button>
+  </div></div>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <div id="banner" class="banner" role="alert"></div>
+</header>
+
+<aside id="panel" aria-label="Tactical rail">
+  <button type="button" class="panel-handle" id="panelHandle" aria-label="Collapse panel"></button>
+  <div class="panel-inner">
+    <section class="panel-section"><div class="panel-section-title"><span data-i18n="hud.threat">Threat</span><span class="tag tag--amber" id="panelThreatTag">—</span></div>
+      <div class="panel-district"><span class="panel-district-name" id="panelDistrictName">—</span></div>
+      <div class="panel-row"><span data-i18n="hud.mitigation">Mitigation</span><span class="panel-row-value mono" id="panelMitigation">0%</span></div>
+      <div class="panel-row"><span class="panel-row-value mono" id="panelPrediction">—</span></div>
+    </section>
+  </div>
+  <div class="panel-footer"><button type="button" class="btn btn-commit btn-block" id="panelCommitBtn" data-i18n="hud.launchWave">Launch Wave</button></div>
+</aside>
+
+<section id="hubScreen" class="screen" aria-label="Command Hub">
+  <div class="screen-panel">
+    <div class="hub-title-block"><h1 class="hub-game-title"><span data-i18n="hub.title">DENGUE DEFENSE</span> <span class="field" data-i18n="hub.edition">Field Edition</span></h1><p class="hub-tagline" data-i18n="hub.tagline">Central Java Outbreak Command</p></div>
+    <div class="mode-grid" role="group" aria-label="Modes">
+      <button type="button" class="mode-card" data-mode="operations" aria-pressed="true"><span class="mode-card-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M3 20l7-15 3 7 5-2-4 9H3z"/></svg></span><span class="mode-card-title" data-i18n="hub.mode1.name">Monsoon Operations</span><span class="mode-card-desc" data-i18n="hub.mode1.desc">Hybrid campaign</span><span class="mode-card-meta"><span class="tag tag--amber" data-i18n="hub.mode1.duration">6-10 min</span><span class="mode-card-best" data-best-mode="operations"></span></span></button>
+      <button type="button" class="mode-card mode-card--board" data-mode="crisis_board" aria-pressed="false"><span class="mode-card-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 5h16M4 12h16M4 19h16"/><circle cx="9" cy="5" r="1.6" fill="currentColor"/><circle cx="15" cy="12" r="1.6" fill="currentColor"/><circle cx="8" cy="19" r="1.6" fill="currentColor"/></svg></span><span class="mode-card-title" data-i18n="hub.mode2.name">Crisis Board</span><span class="mode-card-desc" data-i18n="hub.mode2.desc">Turn-based puzzle</span><span class="mode-card-meta"><span class="tag tag--bio" data-i18n="hub.mode2.duration">4-6 min</span><span class="mode-card-best" data-best-mode="crisis_board"></span></span></button>
+      <button type="button" class="mode-card mode-card--blitz" data-mode="blitz" aria-pressed="false"><span class="mode-card-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M13 2L5 14h5l-1 8 9-12h-6z"/></svg></span><span class="mode-card-title" data-i18n="hub.mode3.name">Outbreak Blitz</span><span class="mode-card-desc" data-i18n="hub.mode3.desc">Score attack</span><span class="mode-card-meta"><span class="tag tag--amber" data-i18n="hub.mode3.duration">2:30</span><span class="mode-card-best" data-best-mode="blitz"></span></span></button>
+    </div>
+    <div class="panel-section-title"><span data-i18n="hub.doctrine.label">Commander Doctrine</span></div>
+    <div class="doctrine-row" id="hubDoctrineRow" role="group" aria-label="Doctrine">
+      <button type="button" class="doctrine-card" data-doctrine="surveillance_directorate" aria-pressed="false"><span class="doctrine-name" data-i18n="hub.doctrine.surveillance.name">Surveillance</span><span class="doctrine-desc" data-i18n="hub.doctrine.surveillance.desc">Information superiority</span></button>
+      <button type="button" class="doctrine-card" data-doctrine="biocontrol_taskforce" aria-pressed="false"><span class="doctrine-name" data-i18n="hub.doctrine.biocontrol.name">Bio-Control</span><span class="doctrine-desc" data-i18n="hub.doctrine.biocontrol.desc">Ecological suppression</span></button>
+      <button type="button" class="doctrine-card" data-doctrine="rapid_response_corps" aria-pressed="false"><span class="doctrine-name" data-i18n="hub.doctrine.rapid.name">Rapid Response</span><span class="doctrine-desc" data-i18n="hub.doctrine.rapid.desc">Surge capacity</span></button>
+    </div>
+    <details class="seed-drawer"><summary data-i18n="hub.seed.label">Operation Seed</summary><div class="drawer-body"><div class="seed-row"><input type="text" class="seed-input" id="hubSeedInput" maxlength="24" autocomplete="off" spellcheck="false" inputmode="text"><button type="button" class="btn btn-ghost" id="hubSeedRandom" data-i18n="hub.seed.random">Randomize</button><button type="button" class="btn btn-primary" id="hubSeedApply" data-i18n="hub.seed.apply">Lock Seed</button></div></div></details>
+    <details class="mutator-drawer"><summary data-i18n="hub.mutators.label">Mutators</summary><div class="drawer-body"><p class="screen-sub" data-i18n="hub.mutators.hint">Optional run modifiers</p><div class="mutator-grid" id="hubMutatorGrid"></div></div></details>
+    <div class="hub-actions"><button type="button" class="btn btn-primary btn-lg" id="hubDeployBtn" data-i18n="hub.play">Deploy</button><button type="button" class="btn btn-ghost" id="hubLeaderboardBtn" data-i18n="lb.title">Leaderboard</button><button type="button" class="btn btn-ghost" id="hubEpikdBtn" data-i18n="hub.epikd">EpiKD Lab</button></div>
+  </div>
+</section>
+
+<section id="dispatchScreen" class="screen hidden" hidden aria-label="Directive">
+  <div class="screen-panel">
+    <p class="screen-sub dispatch-eyebrow" data-i18n="hud.phase.briefing">BRIEFING</p>
+    <h2 class="screen-title" id="dispatchTitle">—</h2>
+    <p class="dispatch-body" id="dispatchBody">—</p>
+    <div class="dispatch-choices">
+      <button type="button" class="choice-card" id="dispatchChoiceA"><span class="choice-key"><kbd class="kbd">1</kbd></span><span class="choice-label" id="dispatchChoiceALabel">—</span><span class="choice-desc" id="dispatchChoiceADesc">—</span></button>
+      <button type="button" class="choice-card" id="dispatchChoiceB"><span class="choice-key"><kbd class="kbd">2</kbd></span><span class="choice-label" id="dispatchChoiceBLabel">—</span><span class="choice-desc" id="dispatchChoiceBDesc">—</span></button>
+    </div>
+  </div>
+</section>
+
+<section id="reportScreen" class="screen hidden" hidden aria-label="After-action report">
+  <div class="screen-panel">
+    <p class="screen-sub dispatch-eyebrow" data-i18n="hud.phase.triage">TRIAGE REPORT</p>
+    <h2 class="screen-title" id="reportTitle">—</h2>
+    <div class="report-stats">
+      <div class="report-stat"><span class="report-stat-label" data-i18n="end.casesPrevented">Cases Prevented</span><span class="report-stat-value" id="reportCasesPrevented">0</span></div>
+      <div class="report-stat"><span class="report-stat-label" data-i18n="end.vectorsSwatted">Vectors Swatted</span><span class="report-stat-value" id="reportSwatted">0</span></div>
+      <div class="report-stat"><span class="report-stat-label" data-i18n="end.cleanMonths">Clean Months</span><span class="report-stat-value" id="reportCleanMonths">0</span></div>
+    </div>
+    <div class="report-actions"><button type="button" class="btn btn-primary" id="reportContinueBtn" data-i18n="hud.launchWave">Launch Wave</button></div>
+  </div>
+</section>
+
+<section id="perkScreen" class="screen hidden" hidden aria-label="Field perks">
+  <div class="screen-panel">
+    <h2 class="screen-title" data-i18n="mode1.perk.title">FIELD PERKS</h2>
+    <div class="perk-grid" id="perkGrid"></div>
+  </div>
+</section>
+
+<section id="pauseScreen" class="screen hidden" hidden aria-label="Paused">
+  <div class="screen-panel">
+    <h2 class="pause-title" data-i18n="hud.pause">Pause</h2>
+    <div class="pause-actions"><button type="button" class="btn btn-primary" id="pauseResumeBtn" data-i18n="epikd.close">Close</button><button type="button" class="btn btn-ghost" id="pauseHubBtn" data-i18n="end.hub">Return to Hub</button></div>
+  </div>
+</section>
+
+<section id="badgeScreen" class="screen hidden" hidden aria-label="Badges">
+  <div class="screen-panel">
+    <div class="screen-header"><h2 class="screen-title" id="badgeTitle"></h2><button type="button" class="icon-toggle" id="badgeCloseBtn" aria-label="Close" data-i18n-title="epikd.close"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <div class="badge-grid" id="badgeGrid"></div>
+  </div>
+</section>
+
+
+<section id="leaderboardScreen" class="screen hidden" hidden aria-label="Leaderboard">
+  <div class="screen-panel">
+    <div class="screen-header"><h2 class="screen-title" data-i18n="lb.title">Leaderboard</h2><button type="button" class="icon-toggle" id="lbCloseBtn" aria-label="Close" data-i18n-title="epikd.close"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <div id="lbModeTabs" role="tablist">
+      <button type="button" class="lb-tab lb-mode-tab is-active" data-mode="operations" role="tab" aria-selected="true" data-i18n="lb.mode.operations">Operations</button>
+      <button type="button" class="lb-tab lb-mode-tab" data-mode="crisis_board" role="tab" aria-selected="false" data-i18n="lb.mode.crisis_board">Crisis Board</button>
+      <button type="button" class="lb-tab lb-mode-tab" data-mode="blitz" role="tab" aria-selected="false" data-i18n="lb.mode.blitz">Outbreak Blitz</button>
+    </div>
+    <div class="lb-table"><div class="lb-head"><span data-i18n="lb.col.rank">#</span><span data-i18n="lb.col.name">Callsign</span><span data-i18n="lb.col.score">Score</span><span data-i18n="lb.col.doctrine">Doctrine</span></div><div id="lbRows" aria-live="polite"></div></div>
+    <form class="lb-submit" id="lbSubmitForm" autocomplete="off"><label class="screen-sub" for="lbNameInput" data-i18n="lb.submit.prompt">Record your run on the board</label><div class="lb-submit-row"><input type="text" id="lbNameInput" class="seed-input" maxlength="24" autocomplete="off" spellcheck="false" placeholder="Callsign"><button type="submit" class="btn btn-primary" id="lbSubmitBtn" data-i18n="lb.submit.button">Submit Run</button></div><button type="button" class="btn btn-ghost btn-sm" id="lbRefreshBtn" data-i18n="lb.refresh">Refresh</button><p id="lbStatusMsg" role="status" aria-live="polite"></p></form>
+  </div>
+</section>
+
+<section id="endScreen" class="screen hidden" hidden aria-label="Debrief">
+  <div class="screen-panel">
+    <div class="end-grade" id="endGrade">A</div>
+    <h2 class="end-title" id="endTitle">—</h2>
+    <p class="end-sub" id="endBody">—</p>
+    <p class="pill pill--amber" id="endNewBest" hidden data-i18n="end.newBest">NEW BEST</p>
+    <div class="end-stats"><span class="report-stat-label" data-i18n="end.stats.title">After-Action Report</span><div class="report-stat"><span class="report-stat-label" data-i18n="end.score">Final Score</span><span class="report-stat-value" id="endScore">0</span></div><div class="report-stat"><span class="report-stat-label" data-i18n="end.best">Best</span><span class="report-stat-value" id="endBest">0</span></div><div class="report-stat"><span class="report-stat-label" data-i18n="end.casesPrevented">Cases Prevented</span><span class="report-stat-value" id="endCasesPrevented">0</span></div><div class="report-stat"><span class="report-stat-label" data-i18n="end.vectorsSwatted">Vectors Swatted</span><span class="report-stat-value" id="endSwatted">0</span></div></div>
+    <div class="end-actions"><button type="button" class="btn btn-primary" id="endSubmitBtn" data-i18n="end.submit">Submit to Leaderboard</button><button type="button" class="btn btn-ghost" id="endPlayAgainBtn" data-i18n="end.playAgain">Play Again</button><button type="button" class="btn btn-ghost" id="endNewSeedBtn" data-i18n="end.newSeed">New Seed</button><button type="button" class="btn btn-ghost" id="endHubBtn" data-i18n="end.hub">Return to Hub</button></div>
+  </div>
+</section>
+
+<aside id="epikdLabDrawer" aria-hidden="true" role="dialog" aria-labelledby="epikdDrawerTitle">
+  <div class="drawer-head"><span class="drawer-title" id="epikdDrawerTitle"><svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M9 3h6M10 3v6l-5.5 9.5A2.4 2.4 0 0 0 6.6 22h10.8a2.4 2.4 0 0 0 2.1-3.5L14 9V3"/></svg><span data-i18n="epikd.title">EpiKD Lab &amp; Field Manual</span></span><button type="button" class="drawer-close" id="epikdCloseBtn" aria-label="Close" data-i18n-title="epikd.close"><svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+  <p class="screen-sub" data-i18n="epikd.subtitle">Model telemetry for the curious commander.</p>
+  <div class="drawer-tabs" role="tablist">
+    <button type="button" class="drawer-tab is-active" id="epikdTabModel" role="tab" aria-selected="true" aria-controls="epikdPanelModel" data-epikd-tab="epikdPanelModel" data-i18n="epikd.tab.model">Model Card</button>
+    <button type="button" class="drawer-tab" id="epikdTabDrivers" role="tab" aria-selected="false" aria-controls="epikdPanelDrivers" data-epikd-tab="epikdPanelDrivers" data-i18n="epikd.tab.drivers">District Drivers</button>
+    <button type="button" class="drawer-tab" id="epikdTabAudit" role="tab" aria-selected="false" aria-controls="epikdPanelAudit" data-epikd-tab="epikdPanelAudit" data-i18n="epikd.tab.audit">Waterfall Audit</button>
+    <button type="button" class="drawer-tab" id="epikdTabManual" role="tab" aria-selected="false" aria-controls="epikdPanelManual" data-epikd-tab="epikdPanelManual" data-i18n="epikd.tab.manual">Field Manual</button>
+  </div>
+  <div class="drawer-body" id="epikdPanelModel" role="tabpanel" aria-labelledby="epikdTabModel"><h3 data-i18n="epikd.scope.title">Scope</h3><p data-i18n="epikd.scope.body">Model notes.</p></div>
+  <div class="drawer-body" id="epikdPanelDrivers" role="tabpanel" aria-labelledby="epikdTabDrivers" hidden></div>
+  <div class="drawer-body" id="epikdPanelAudit" role="tabpanel" aria-labelledby="epikdTabAudit" hidden></div>
+  <div class="drawer-body" id="epikdPanelManual" role="tabpanel" aria-labelledby="epikdTabManual" hidden></div>
+</aside>
+</body>
+</html>

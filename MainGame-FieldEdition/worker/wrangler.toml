@@ -1,0 +1,15 @@
+name = "dengue-leaderboard"
+main = "src/index.js"
+compatibility_date = "2026-01-15"
+workers_dev = true
+preview_urls = true
+
+[[routes]]
+pattern = "dengue-api.datajoget.my.id"
+custom_domain = true
+
+[[d1_databases]]
+binding = "DB"
+database_name = "dengue-lb"
+# Run `wrangler d1 create dengue-lb` and paste the id here:
+database_id = "0a143fec-0f81-4815-babd-b6a0ec333b02"
