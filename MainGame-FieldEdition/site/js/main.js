@@ -15,7 +15,7 @@ import {
   getG, getW, setG, setW,
   randomSeedWord, parseSeed,
 } from './state.js';
-import { MapRenderer, getView, toMap } from './map-renderer.js';
+import { MapRenderer, getView, toMap, syncViewProjection } from './map-renderer.js';
 import { t, getLang, setLang, toggleLanguage, applyStaticI18n } from './i18n.js';
 import {
   setAudioEnabled, isAudioEnabled,
@@ -232,6 +232,8 @@ function exitToHub() {
   stopCurrentMode();
   hideAllScreens();
   showScreen('hubScreen');
+  refreshHud(null);
+  syncViewProjection();
   paintModeCards();
   paintDoctrineCards();
   refreshHubBests();
@@ -708,10 +710,12 @@ function frame(now) {
       try { currentMode.update(dt, now); } catch (e) { console.error('[main] update failed', e); }
     }
     document.body.classList.toggle('phase-wave', !!snap && snap.phase === 'wave');
+    syncViewProjection();
     if (ctx && typeof currentMode.render === 'function') {
       try { currentMode.render(ctx, getView(), now); } catch (e) { console.error('[main] render failed', e); }
     }
   } else if (ctx && renderer) {
+    syncViewProjection();
     try { renderer.render(ctx, {}, now); } catch (e) { console.error('[main] background render failed', e); }
     document.body.classList.remove('phase-wave');
   }
@@ -721,6 +725,7 @@ function frame(now) {
     refreshHud(snap);
     syncPhaseScreens(snap);
     syncTerminalState(snap);
+    syncViewProjection();
   }
 }
 
@@ -918,8 +923,12 @@ function bindSiblings() {
       uiHud.bindHudControls({
         onPause: () => { togglePause(); return true; },
         onCommit: (mode) => {
-          if (mode === 'crisis_board') forwardToMode({ key: 'Enter', preventDefault() {} });
-          else dispatchDd('dd:commit-deployment', {});
+          if (mode === 'crisis_board') {
+            if (currentMode && typeof currentMode.commitTurn === 'function') currentMode.commitTurn();
+            else forwardToMode({ key: 'Enter', preventDefault() {} });
+          } else {
+            dispatchDd('dd:commit-deployment', {});
+          }
           return true;
         },
         onSpray: () => { dispatchDd('dd:spray-burst', {}); return true; },
@@ -930,8 +939,15 @@ function bindSiblings() {
         onHapticsToggle: () => true,
         onTogglePanel: () => true,
         onCopySeed: () => true,
-        onDistrictSelect: (districtId) => { dispatchDd('dd:select-district', { districtId }); return undefined; },
-        onProtocolToggle: (protocol, districtId, active) => { dispatchDd('dd:toggle-protocol', { protocol, districtId, active }); return undefined; },
+        onDistrictSelect: (districtId) => {
+          if (currentMode && typeof currentMode.selectDistrict === 'function') {
+            currentMode.selectDistrict(districtId);
+            return true;
+          }
+          dispatchDd('dd:select-district', { districtId });
+          return true;
+        },
+        onProtocolToggle: (protocol, districtId, active) => { dispatchDd('dd:toggle-protocol', { protocol, districtId, active }); return true; },
         onActionSelect: (actionId) => {
           try {
             const snap = safeSnapshot();
@@ -941,7 +957,7 @@ function bindSiblings() {
           dispatchDd('dd:select-action', { actionId });
           return true;
         },
-        onPing: (districtId) => { dispatchDd('dd:ping', { districtId }); return undefined; },
+        onPing: (districtId) => { dispatchDd('dd:ping', { districtId }); return true; },
       });
     } catch (e) { console.error('[main] bindHudControls failed', e); }
   }
@@ -957,6 +973,7 @@ function bindSiblings() {
           blitz: loadBest('blitz'),
         },
       });
+      refreshHud(null);
     } catch (e) { console.error('[main] showHub failed', e); }
   }
 }

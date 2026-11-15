@@ -431,16 +431,10 @@ export const CrisisBoardMode = {
     this._drawDistrictMicro(ctx, time);
     if (this.phase === 'resolution') this._drawResolutionCues(ctx, time);
 
-    // Pass 3: screen-space UI chrome.
+    // Pass 3: minimal in-corridor message toast & pause banner (HUD + rail live in DOM).
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     this._buttons = [];
-    this._drawTopStrip(ctx, v, time);
-    this._drawEventCard(ctx, v, time);
-    this._drawPreviewPanel(ctx, v, time);
-    this._drawActionBar(ctx, v, time);
-    this._drawPhaseControl(ctx, v, time);
     this._drawMessage(ctx, v, time);
-    if (this.phase === 'over') this._drawOverOverlay(ctx, v, time);
     if (this.paused) this._drawCenterTag(ctx, v, 'PAUSED - PRESS P TO RESUME');
   },
 
@@ -465,17 +459,24 @@ export const CrisisBoardMode = {
     const p = this._points(pt, ev);
     if (!p) return null;
 
-    // 1) UI buttons (screen space).
+    // 1) UI buttons (screen space, if any).
     const btn = this._hitButton(p.sx, p.sy);
     if (btn) { this._onButton(btn.id); return { consumed: true, button: btn.id }; }
-    if (this.phase === 'over') return { consumed: false };
+    if (this.phase === 'over' || this.phase === 'resolution') return { consumed: false };
 
-    // 2) Map interactions (map space): border lock nodes win over districts.
+    // 2) Map interactions (map space): clicking a border or district enters allocate seamlessly.
     const edge = this._nearestBorder(p.mx, p.my, 22);
-    if (edge && this.phase === 'allocate') { this._toggleCordon(edge); return { consumed: true, edge: edge.id }; }
+    if (edge) {
+      if (this.phase === 'intel') this.phase = 'allocate';
+      this._toggleCordon(edge);
+      return { consumed: true, edge: edge.id };
+    }
     const d = districtAt(p.mx, p.my, this.districts);
-    if (d) { this._onDistrictClick(d); return { consumed: true, district: d.id }; }
-    if (edge) { this._setMessage('ENTER COMMAND ALLOCATION TO PLACE CORDONS', 2.5); return { consumed: true, edge: edge.id }; }
+    if (d) {
+      if (this.phase === 'intel') this.phase = 'allocate';
+      this._onDistrictClick(d);
+      return { consumed: true, district: d.id };
+    }
     return { consumed: false };
   },
 
@@ -608,6 +609,28 @@ export const CrisisBoardMode = {
       scoreMult: Number((this.mutatorMult || 1).toFixed(3)),
       totals: g && g.totals ? { ...g.totals } : undefined,
     };
+  },
+
+  selectAction(id) {
+    this._selectAction(id);
+    return this;
+  },
+
+  selectDistrict(id) {
+    const d = this.districtById && this.districtById[id];
+    if (!d) return false;
+    if (this.phase === 'intel') this.phase = 'allocate';
+    this._onDistrictClick(d);
+    return true;
+  },
+
+  commitTurn() {
+    if (this.phase === 'intel') this.phase = 'allocate';
+    if (this.phase === 'allocate') {
+      this._resolveWeek();
+      return true;
+    }
+    return false;
   },
 };
 
@@ -1691,16 +1714,22 @@ Object.assign(CrisisBoardMode, {
     if (!this.message || this.messageUntil <= 0) return;
     const text = String(this.message);
     ctx.save();
-    ctx.font = '700 9px "Plus Jakarta Sans", "Segoe UI", system-ui, sans-serif';
-    const wText = Math.min(620, ctx.measureText(text).width + 28);
+    ctx.font = '700 11px "Plus Jakarta Sans", "Segoe UI", system-ui, sans-serif';
+    const wText = Math.min(Math.max(180, v.w - 32), ctx.measureText(text).width + 32);
     ctx.restore();
-    const x = (v.w - wText) / 2, y = v.h - 78;
+    const mapCx = v.ox + (CORRIDOR.MW * v.scale) / 2;
+    const cx = Math.max(wText / 2 + 12, Math.min(v.w - wText / 2 - 12, mapCx));
+    const x = cx - wText / 2;
+    const y = Math.max(84, Math.min(v.h - 24, Math.round(v.oy - 2)));
     ctx.save();
-    this._rr(ctx, x, y - 10, wText, 20, 10);
-    ctx.fillStyle = 'rgba(6, 12, 15, 0.85)';
+    this._rr(ctx, x, y - 12, wText, 24, 12);
+    ctx.fillStyle = 'rgba(6, 12, 15, 0.88)';
     ctx.fill();
+    ctx.strokeStyle = 'rgba(56, 189, 248, 0.35)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
     ctx.restore();
-    this._text(ctx, text, v.w / 2, y + 0.5, { size: 9, color: '#E6F0F2', align: 'center', weight: 400 });
+    this._text(ctx, text, cx, y + 0.5, { size: 11, color: '#E6F0F2', align: 'center', weight: 600 });
   },
 
   _drawCenterTag(ctx, v, text) {

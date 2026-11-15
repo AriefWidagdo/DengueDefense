@@ -93,32 +93,33 @@ function ensureStyle() {
   const style = d.createElement('style');
   style.id = 'dd-hud-style';
   style.textContent = `
-  #hud.dd-hud{position:relative;z-index:20;display:flex;align-items:center;justify-content:space-between;gap:10px;
-    padding:8px 12px;min-height:56px;max-height:56px;box-sizing:border-box;
-    background:var(--bg-glass,rgba(11,21,25,.86));backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
-    border-bottom:1px solid var(--border-subtle,rgba(148,210,230,.14));color:var(--text-primary,#E6F0F2);
+  #hud.dd-hud{pointer-events:auto;display:flex;align-items:center;justify-content:space-between;gap:10px;
+    padding:6px 12px;min-height:56px;max-height:56px;box-sizing:border-box;
+    background:var(--bg-glass,rgba(11,21,25,.88));backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+    border:1px solid var(--border-subtle,rgba(148,210,230,.14));border-radius:var(--radius-lg,12px);
+    box-shadow:var(--shadow-panel,0 12px 32px rgba(0,0,0,.45));color:var(--text-primary,#E6F0F2);
     font-family:var(--font-sans,'Plus Jakarta Sans','Inter','Segoe UI',system-ui,sans-serif);}
   .ddh-cluster{display:flex;align-items:center;gap:8px;min-width:0;}
   .ddh-left{flex:0 1 auto;justify-content:flex-start;}
   .ddh-center{flex:1 1 auto;justify-content:center;gap:10px;}
   .ddh-right{flex:0 1 auto;justify-content:flex-end;}
   .ddh-badge{display:flex;align-items:center;gap:7px;padding:4px 10px;border:1px solid var(--border-strong,#2E4D5B);
-    border-radius:var(--radius-pill,999px);background:var(--bg-elevated,#1A2E38);font-size:10px;font-weight:800;
-    letter-spacing:.12em;color:var(--accent-primary,#F59E0B);white-space:nowrap;max-width:190px;overflow:hidden;}
+    border-radius:var(--radius-pill,999px);background:var(--bg-elevated,#1A2E38);font-size:10.5px;font-weight:800;
+    letter-spacing:.1em;color:var(--accent-primary,#F59E0B);white-space:nowrap;max-width:210px;overflow:hidden;}
   .ddh-badge svg{width:16px;height:16px;flex:0 0 auto;}
-  .ddh-badge small{display:block;font-size:7px;letter-spacing:.18em;color:var(--text-secondary,#8FA8B2);font-weight:700;}
+  .ddh-badge small{display:block;font-size:8.5px;letter-spacing:.14em;color:var(--text-secondary,#8FA8B2);font-weight:700;}
   .ddh-pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:var(--radius-pill,999px);
     border:1px solid var(--border-subtle,rgba(148,210,230,.14));background:var(--bg-surface,#132229);
-    font:600 10.5px var(--font-mono,'JetBrains Mono','Cascadia Mono','Consolas',monospace);font-variant-numeric:tabular-nums;
-    color:var(--text-primary,#E6F0F2);white-space:nowrap;letter-spacing:.05em;}
-  .ddh-pill .ddh-lbl{font-size:7px;letter-spacing:.14em;color:var(--text-secondary,#8FA8B2);font-weight:700;}
+    font:600 11px var(--font-mono,'JetBrains Mono','Cascadia Mono','Consolas',monospace);font-variant-numeric:tabular-nums;
+    color:var(--text-primary,#E6F0F2);white-space:nowrap;letter-spacing:.04em;}
+  .ddh-pill .ddh-lbl{font-size:9px;letter-spacing:.1em;color:var(--text-secondary,#8FA8B2);font-weight:700;}
   .ddh-seed{cursor:pointer;border-style:dashed;color:var(--text-secondary,#8FA8B2);}
   .ddh-seed:hover{color:var(--text-primary,#E6F0F2);border-color:var(--border-strong,#2E4D5B);}
-  .ddh-gauge{display:flex;flex-direction:column;gap:3px;min-width:150px;max-width:230px;}
+  .ddh-gauge{display:flex;flex-direction:column;gap:3px;min-width:155px;max-width:230px;}
   .ddh-gauge-top{display:flex;align-items:baseline;justify-content:space-between;gap:8px;}
-  .ddh-gauge-lbl{font-size:7px;letter-spacing:.16em;color:var(--text-secondary,#8FA8B2);font-weight:800;}
+  .ddh-gauge-lbl{font-size:9px;letter-spacing:.12em;color:var(--text-secondary,#8FA8B2);font-weight:800;}
   .ddh-gauge-val{font:700 13px var(--font-mono,'JetBrains Mono','Cascadia Mono','Consolas',monospace);font-variant-numeric:tabular-nums;color:var(--text-primary,#E6F0F2);}
-  .ddh-gauge-val em{font-style:normal;color:var(--text-muted,#5B737E);font-size:9px;}
+  .ddh-gauge-val em{font-style:normal;color:var(--text-muted,#5B737E);font-size:10px;}
   .ddh-track{height:6px;border-radius:var(--radius-pill,999px);background:var(--bg-elevated,#1A2E38);overflow:hidden;border:1px solid var(--border-subtle,rgba(148,210,230,.14));}
   .ddh-fill{height:100%;width:0%;background:var(--status-safe,#10B981);transition:width .25s ease;}
   .ddh-fill.warn{background:var(--status-warn,#F59E0B);}
@@ -136,93 +137,101 @@ function ensureStyle() {
   .ddh-iconbtn[aria-pressed="false"]{color:var(--text-muted,#5B737E);}
   .ddh-iconbtn svg{width:17px;height:17px;}
   .ddh-lang{display:inline-flex;border:1px solid var(--border-subtle,rgba(148,210,230,.14));border-radius:var(--radius-md,8px);overflow:hidden;}
-  .ddh-lang button{min-width:36px;height:34px;padding:0 8px;font:800 10px var(--font-mono,'JetBrains Mono','Cascadia Mono','Consolas',monospace);
+  .ddh-lang button{min-width:36px;height:34px;padding:0 8px;font:800 10.5px var(--font-mono,'JetBrains Mono','Cascadia Mono','Consolas',monospace);
     letter-spacing:.08em;background:transparent;color:var(--text-secondary,#8FA8B2);border:0;cursor:pointer;}
   .ddh-lang button[aria-pressed="true"]{background:var(--accent-primary,#F59E0B);color:var(--on-accent,#0A1317);}
   .ddh-epikd{display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 12px;border-radius:var(--radius-pill,999px);
     border:1px solid var(--accent-hydro,#38BDF8);color:var(--accent-hydro,#38BDF8);background:transparent;
-    font-size:9px;font-weight:800;letter-spacing:.12em;cursor:pointer;white-space:nowrap;}
+    font-size:10px;font-weight:800;letter-spacing:.1em;cursor:pointer;white-space:nowrap;}
   .ddh-epikd:hover{background:rgba(56,189,248,.12);}
   .ddh-epikd svg{width:15px;height:15px;}
   .ddh-blitz{display:flex;align-items:center;gap:10px;}
-  .ddh-blitz-clock{font:800 24px var(--font-mono,'JetBrains Mono','Cascadia Mono','Consolas',monospace);font-variant-numeric:tabular-nums;
-    color:var(--text-primary,#E6F0F2);letter-spacing:.04em;min-width:86px;text-align:center;}
+  .ddh-blitz-clock{font:800 22px var(--font-mono,'JetBrains Mono','Cascadia Mono','Consolas',monospace);font-variant-numeric:tabular-nums;
+    color:var(--text-primary,#E6F0F2);letter-spacing:.04em;min-width:82px;text-align:center;}
   .ddh-blitz-clock.late{color:var(--status-danger,#EF4444);animation:ddh-pulse 1s ease infinite;}
   @keyframes ddh-pulse{50%{opacity:.55;}}
   .ddh-spraytrig{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 14px;border-radius:var(--radius-md,8px);
     border:1px solid var(--accent-primary,#F59E0B);background:rgba(245,158,11,.14);color:var(--accent-primary,#F59E0B);
-    font-weight:800;font-size:10px;letter-spacing:.1em;cursor:pointer;}
+    font-weight:800;font-size:10.5px;letter-spacing:.08em;cursor:pointer;}
   .ddh-spraytrig svg{width:17px;height:17px;}
   /* Field Gadget Dock (wave phases) */
   #ddDock{position:fixed;left:50%;bottom:calc(14px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);
     z-index:25;display:flex;align-items:center;gap:14px;padding:8px 14px;border-radius:var(--radius-lg,12px);
-    background:var(--bg-glass,rgba(11,21,25,.88));backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+    background:var(--bg-glass,rgba(11,21,25,.9));backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
     border:1px solid var(--border-strong,#2E4D5B);box-shadow:var(--shadow-panel,0 12px 32px rgba(0,0,0,.45));}
   .ddh-ring{position:relative;width:58px;height:58px;}
   .ddh-ring svg{width:58px;height:58px;transform:rotate(-90deg);}
   .ddh-ring .ddh-ring-bg{stroke:var(--bg-elevated,#1A2E38);}
   .ddh-ring .ddh-ring-fg{stroke:var(--accent-hydro,#38BDF8);transition:stroke-dashoffset .15s linear;}
   .ddh-ring.ready .ddh-ring-fg{stroke:var(--accent-primary,#F59E0B);}
-  .ddh-ring-num{position:absolute;inset:0;display:grid;place-items:center;font:800 10px var(--font-mono,'JetBrains Mono','Cascadia Mono','Consolas',monospace);color:var(--text-primary,#E6F0F2);}
-  .ddh-ring-cap{font-size:6.5px;letter-spacing:.14em;color:var(--text-secondary,#8FA8B2);text-align:center;margin-top:2px;font-weight:800;}
-  .ddh-dockbtn{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:74px;padding:8px 10px;
+  .ddh-ring-num{position:absolute;inset:0;display:grid;place-items:center;font:800 10.5px var(--font-mono,'JetBrains Mono','Cascadia Mono','Consolas',monospace);color:var(--text-primary,#E6F0F2);}
+  .ddh-ring-cap{font-size:8.5px;letter-spacing:.12em;color:var(--text-secondary,#8FA8B2);text-align:center;margin-top:2px;font-weight:800;}
+  .ddh-dockbtn{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:78px;padding:8px 10px;
     border-radius:var(--radius-md,8px);border:1px solid var(--border-subtle,rgba(148,210,230,.14));
     background:var(--bg-surface,#132229);color:var(--text-primary,#E6F0F2);cursor:pointer;}
-  .ddh-dockbtn b{font-size:9px;letter-spacing:.1em;}
-  .ddh-dockbtn span{font-size:7px;color:var(--text-secondary,#8FA8B2);font-variant-numeric:tabular-nums;}
+  .ddh-dockbtn b{font-size:10.5px;letter-spacing:.08em;}
+  .ddh-dockbtn span{font-size:9.5px;color:var(--text-secondary,#8FA8B2);font-variant-numeric:tabular-nums;}
   .ddh-dockbtn svg{width:18px;height:18px;}
   .ddh-dockbtn:disabled{opacity:.38;cursor:not-allowed;}
-  /* Tactical rail (#panel) */
-  #panel.dd-panel{position:relative;z-index:20;}
-  #ddRail{display:flex;flex-direction:column;gap:10px;padding:10px 12px calc(10px + env(safe-area-inset-bottom,0px));
-    background:var(--bg-surface,#132229);border:1px solid var(--border-subtle,rgba(148,210,230,.14));
-    border-radius:var(--radius-lg,12px);margin:8px;max-height:min(62vh,560px);overflow:auto;
+  /* Tactical rail (#panel keeps fixed desktop rail / mobile bottom sheet from layout.css) */
+  #panel.dd-panel{display:flex;flex-direction:column;overflow:hidden;}
+  #panel.dd-panel.dd-collapsed{bottom:auto;height:auto;}
+  #ddRail{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;gap:9px;
+    padding:12px 12px calc(14px + env(safe-area-inset-bottom,0px));
+    overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;scrollbar-color:var(--border-strong,#2E4D5B) transparent;
     color:var(--text-primary,#E6F0F2);font-family:var(--font-sans,'Plus Jakarta Sans','Inter','Segoe UI',system-ui,sans-serif);}
   #ddRail.collapsed .ddh-rail-body{display:none;}
   .ddh-rail-handle{display:flex;align-items:center;justify-content:space-between;gap:10px;background:transparent;
     border:0;border-bottom:1px solid var(--border-subtle,rgba(148,210,230,.14));padding:2px 2px 8px;cursor:pointer;color:var(--text-primary,#E6F0F2);text-align:left;width:100%;}
-  .ddh-rail-handle .ddh-rail-title{font-size:9px;letter-spacing:.18em;font-weight:800;color:var(--text-secondary,#8FA8B2);}
-  .ddh-rail-handle .ddh-chev{color:var(--accent-primary,#F59E0B);font-size:12px;}
-  .ddh-districts{display:flex;flex-direction:column;gap:6px;}
-  .ddh-district{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,2fr) auto;gap:8px;align-items:center;
-    padding:6px 8px;border-radius:var(--radius-md,8px);border:1px solid var(--border-subtle,rgba(148,210,230,.14));
+  .ddh-rail-handle .ddh-rail-title{font-size:10px;letter-spacing:.15em;font-weight:800;color:var(--text-secondary,#8FA8B2);}
+  .ddh-rail-handle .ddh-chev{color:var(--accent-primary,#F59E0B);font-size:14px;font-weight:800;}
+  .ddh-sec-title{font-size:10px;letter-spacing:.12em;font-weight:800;text-transform:uppercase;color:var(--text-secondary,#8FA8B2);margin-top:2px;}
+  .ddh-districts{display:flex;flex-direction:column;gap:5px;}
+  .ddh-district{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1.4fr) auto;gap:8px;align-items:center;
+    padding:7px 9px;border-radius:var(--radius-md,8px);border:1px solid var(--border-subtle,rgba(148,210,230,.14));
     background:var(--bg-body,#0B1519);cursor:pointer;color:inherit;text-align:left;width:100%;}
   .ddh-district[aria-pressed="true"]{border-color:var(--accent-primary,#F59E0B);box-shadow:0 0 0 1px var(--accent-primary,#F59E0B) inset;}
-  .ddh-district-name{font-size:10px;font-weight:800;letter-spacing:.05em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .ddh-district-sub{font-size:7px;color:var(--text-secondary,#8FA8B2);font-variant-numeric:tabular-nums;}
+  .ddh-district-name{font-size:11.5px;font-weight:800;letter-spacing:.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .ddh-district-sub{font-size:10px;color:var(--text-secondary,#8FA8B2);font-variant-numeric:tabular-nums;}
   .ddh-meter{height:5px;border-radius:var(--radius-pill,999px);background:var(--bg-elevated,#1A2E38);overflow:hidden;}
   .ddh-meter i{display:block;height:100%;background:var(--status-safe,#10B981);}
   .ddh-meter i.l1{background:var(--status-warn,#F59E0B);}
   .ddh-meter i.l2{background:var(--status-danger,#EF4444);}
   .ddh-meter i.l3{background:var(--status-critical,#D946EF);}
-  .ddh-risk{font:800 8px var(--font-mono,'JetBrains Mono','Cascadia Mono','Consolas',monospace);letter-spacing:.1em;color:var(--text-secondary,#8FA8B2);}
+  .ddh-risk{font:800 9.5px var(--font-mono,'JetBrains Mono','Cascadia Mono','Consolas',monospace);letter-spacing:.08em;color:var(--text-secondary,#8FA8B2);}
   .ddh-protocols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;}
-  .ddh-proto{display:flex;flex-direction:column;gap:2px;align-items:flex-start;padding:7px 9px;border-radius:var(--radius-md,8px);
+  .ddh-proto{display:flex;flex-direction:column;gap:3px;align-items:flex-start;padding:8px 10px;border-radius:var(--radius-md,8px);
     border:1px solid var(--border-subtle,rgba(148,210,230,.14));background:var(--bg-body,#0B1519);cursor:pointer;color:inherit;text-align:left;}
-  .ddh-proto[aria-pressed="true"]{border-color:var(--accent-hydro,#38BDF8);background:rgba(56,189,248,.10);}
-  .ddh-proto b{font-size:9.5px;letter-spacing:.04em;display:flex;align-items:center;gap:6px;}
-  .ddh-proto b svg{width:14px;height:14px;}
-  .ddh-proto span{font-size:7.5px;color:var(--text-secondary,#8FA8B2);font-variant-numeric:tabular-nums;}
+  .ddh-proto[aria-pressed="true"]{border-color:var(--accent-hydro,#38BDF8);background:rgba(56,189,248,.12);}
+  .ddh-proto b{font-size:11px;letter-spacing:.04em;display:flex;align-items:center;gap:6px;}
+  .ddh-proto b svg{width:15px;height:15px;}
+  .ddh-proto span{font:600 10px var(--font-mono,'JetBrains Mono','Cascadia Mono','Consolas',monospace);color:var(--text-secondary,#8FA8B2);font-variant-numeric:tabular-nums;}
   .ddh-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;}
-  .ddh-action{display:flex;flex-direction:column;gap:2px;align-items:flex-start;padding:7px 9px;border-radius:var(--radius-md,8px);
+  .ddh-action{display:flex;flex-direction:column;gap:3px;align-items:flex-start;padding:8px 10px;border-radius:var(--radius-md,8px);
     border:1px solid var(--border-subtle,rgba(148,210,230,.14));background:var(--bg-body,#0B1519);cursor:pointer;color:inherit;text-align:left;}
-  .ddh-action[aria-pressed="true"]{border-color:var(--accent-primary,#F59E0B);background:rgba(245,158,11,.10);}
+  .ddh-action[aria-pressed="true"]{border-color:var(--accent-primary,#F59E0B);background:rgba(245,158,11,.12);}
   .ddh-action:disabled{opacity:.4;cursor:not-allowed;}
-  .ddh-action b{font-size:9.5px;}
-  .ddh-action span{font-size:7.5px;color:var(--text-secondary,#8FA8B2);}
+  .ddh-action b{font-size:11px;line-height:1.25;}
+  .ddh-action span{font:600 10px var(--font-mono,'JetBrains Mono','Cascadia Mono','Consolas',monospace);color:var(--text-secondary,#8FA8B2);}
   .ddh-commit{margin-top:2px;display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:44px;
     border:0;border-radius:var(--radius-md,8px);background:var(--accent-primary,#F59E0B);color:var(--on-accent,#0A1317);
-    font:800 12px var(--font-sans,'Plus Jakarta Sans','Inter','Segoe UI',system-ui,sans-serif);letter-spacing:.14em;
+    font:800 12px var(--font-sans,'Plus Jakarta Sans','Inter','Segoe UI',system-ui,sans-serif);letter-spacing:.12em;
     text-transform:uppercase;cursor:pointer;box-shadow:var(--glow-amber,0 0 18px rgba(245,158,11,.25));}
   .ddh-commit:hover{filter:brightness(1.06);}
   .ddh-commit svg{width:18px;height:18px;}
   .ddh-commit:disabled{opacity:.45;cursor:not-allowed;box-shadow:none;}
-  .ddh-kv{display:flex;justify-content:space-between;gap:8px;font-size:9px;color:var(--text-secondary,#8FA8B2);}
+  .ddh-kv{display:flex;flex-wrap:wrap;justify-content:space-between;gap:6px 10px;font-size:11px;color:var(--text-secondary,#8FA8B2);
+    padding:7px 9px;border-radius:var(--radius-md,8px);background:var(--bg-body,#0B1519);border:1px solid var(--border-subtle,rgba(148,210,230,.12));}
   .ddh-kv b{font-family:var(--font-mono,'JetBrains Mono','Cascadia Mono','Consolas',monospace);color:var(--text-primary,#E6F0F2);font-variant-numeric:tabular-nums;}
+  .ddh-preview{border:1px solid var(--border-subtle,rgba(148,210,230,.14));border-left:3px solid var(--accent-primary,#F59E0B);
+    border-radius:var(--radius-md,8px);padding:8px 10px;background:rgba(245,158,11,.06);}
+  .ddh-preview b{display:block;font-size:10.5px;letter-spacing:.06em;color:var(--accent-primary,#F59E0B);}
+  .ddh-preview span{display:block;margin-top:3px;font:600 10.5px var(--font-mono,'JetBrains Mono','Cascadia Mono','Consolas',monospace);color:var(--text-primary,#E6F0F2);font-variant-numeric:tabular-nums;}
   .ddh-event{border:1px solid var(--border-strong,#2E4D5B);border-left:3px solid var(--accent-hydro,#38BDF8);
-    border-radius:var(--radius-md,8px);padding:7px 9px;background:var(--bg-elevated,#1A2E38);}
-  .ddh-event b{font-size:9px;letter-spacing:.08em;color:var(--accent-hydro,#38BDF8);}
-  .ddh-event p{margin:3px 0 0;font-size:10px;line-height:1.45;color:var(--text-primary,#E6F0F2);}
+    border-radius:var(--radius-md,8px);padding:8px 10px;background:var(--bg-elevated,#1A2E38);}
+  .ddh-event b{display:block;font-size:11px;letter-spacing:.06em;color:var(--accent-hydro,#38BDF8);}
+  .ddh-event small{display:block;margin-top:2px;font-size:10px;font-weight:700;color:var(--accent-primary,#F59E0B);}
+  .ddh-event p{margin:4px 0 0;font-size:11.5px;line-height:1.45;color:var(--text-primary,#E6F0F2);}
   /* Toast + banner */
   #toast.dd-toast{position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom,0px));transform:translate(-50%,14px);
     z-index:70;max-width:min(480px,92vw);padding:9px 16px;border-radius:var(--radius-md,8px);
@@ -233,7 +242,7 @@ function ensureStyle() {
   #toast.dd-toast.warn{border-color:var(--status-warn,#F59E0B);color:var(--status-warn,#F59E0B);}
   #toast.dd-toast.danger{border-color:var(--status-danger,#EF4444);color:var(--status-danger,#EF4444);}
   #toast.dd-toast.ok{border-color:var(--status-safe,#10B981);color:var(--status-safe,#10B981);}
-  #banner.dd-banner{position:fixed;top:calc(64px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);
+  #banner.dd-banner{position:fixed;top:calc(74px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);
     z-index:65;max-width:min(560px,94vw);padding:10px 22px;border-radius:var(--radius-md,8px);text-align:center;
     opacity:1;pointer-events:none;
     background:rgba(217,70,239,.16);border:1px solid var(--status-critical,#D946EF);color:#F5C2FE;
@@ -243,12 +252,13 @@ function ensureStyle() {
   #banner.dd-banner.warn{background:rgba(245,158,11,.14);border-color:var(--status-warn,#F59E0B);color:#FDE68A;}
   #banner.dd-banner.danger{background:rgba(239,68,68,.15);border-color:var(--status-danger,#EF4444);color:#FCA5A5;}
   @media (prefers-reduced-motion: reduce){.ddh-fill,.ddh-combo .ddh-ring-fg,.ddh-ring .ddh-ring-fg{transition:none;}}
-  @media (max-width:900px){
-    #hud.dd-hud{min-height:52px;max-height:none;flex-wrap:wrap;row-gap:6px;padding:6px 8px;}
+  @media (max-width:899px){
+    #hud.dd-hud{height:auto;min-height:50px;max-height:none;flex-wrap:wrap;row-gap:6px;padding:6px 8px;}
     .ddh-gauge{min-width:120px;}
     .ddh-badge small{display:none;}
     .ddh-epikd .ddh-epikd-word{display:none;}
-    #ddRail{max-height:44vh;}
+    #panel.dd-panel{max-height:46vh;}
+    #ddRail{max-height:none;}
   }`;
   d.head ? d.head.appendChild(style) : d.body && d.body.appendChild(style);
 }
@@ -377,11 +387,27 @@ function detectPhase(snapshot, mode) {
 }
 
 const isPlanningPhase = (mode, phase) => {
-  if (mode === 'crisis_board') return phase !== 'over';
-  if (mode === 'operations') return phase === 'briefing' || phase === 'plan' || phase === 'report' || phase === 'perk';
+  if (mode === 'crisis_board') return phase === 'intel' || phase === 'event' || phase === 'allocate' || phase === 'resolution';
+  if (mode === 'operations') return phase === 'plan';
   return false;
 };
 const isWavePhase = (mode, phase) => mode === 'operations' && phase === 'wave';
+
+function isScreenOpen(d, id) {
+  const n = d && d.getElementById(id);
+  if (!n) return false;
+  return !n.hidden && !n.classList.contains('hidden') && !n.classList.contains('ddm-hidden') && n.getAttribute('aria-hidden') !== 'true';
+}
+
+function hideChrome(d) {
+  if (!d) return;
+  const hudEl = d.getElementById('hud');
+  const panelEl = d.getElementById('panel');
+  const dockEl = d.getElementById('ddDock');
+  if (hudEl) { hudEl.classList.add('hidden'); hudEl.setAttribute('aria-hidden', 'true'); }
+  if (panelEl) { panelEl.classList.add('hidden'); panelEl.setAttribute('aria-hidden', 'true'); }
+  if (dockEl) dockEl.style.display = 'none';
+}
 
 /* ---------------------------------------------------- normalised vitals */
 function vitals(snapshot) {
@@ -427,28 +453,44 @@ let currentHandlers = {};
 export function renderHud(snapshot) {
   const d = doc();
   if (!d) return false;
-  if (!snapshot || typeof snapshot !== 'object') return false;
+  if (!snapshot || typeof snapshot !== 'object') {
+    hideChrome(d);
+    return false;
+  }
   lastSnapshot = snapshot;
   ensureStyle();
   const scaffold = ensureHudScaffold();
   if (!scaffold) return false;
-  const { left, center, right } = scaffold;
+  const { hud, left, center, right } = scaffold;
 
   const mode = detectMode(snapshot);
   const phase = detectPhase(snapshot, mode);
   const isBlitz = mode === 'blitz';
   const planning = isPlanningPhase(mode, phase);
   const wave = isWavePhase(mode, phase);
+  const overlayBlocking = isScreenOpen(d, 'hubScreen') || isScreenOpen(d, 'endScreen') || isScreenOpen(d, 'leaderboardScreen');
+  const terminalPhase = phase === 'over' || phase === 'end' || phase === 'idle';
 
-  /* ---- Panel visibility choreography ---- */
+  /* ---- HUD & Panel visibility choreography ---- */
   const panelEl = d.getElementById('panel');
   const dock = ensureDock();
-  if (isBlitz || wave) {
+  if (overlayBlocking || terminalPhase) {
+    hud.classList.add('hidden');
+    hud.setAttribute('aria-hidden', 'true');
+  } else {
+    hud.classList.remove('hidden');
+    hud.removeAttribute('aria-hidden');
+  }
+  if (overlayBlocking || terminalPhase || isBlitz || wave || !planning) {
     if (panelEl) { panelEl.classList.add('hidden'); panelEl.setAttribute('aria-hidden', 'true'); }
   } else {
-    if (panelEl) { panelEl.classList.remove('hidden'); panelEl.removeAttribute('aria-hidden'); }
+    if (panelEl) {
+      panelEl.classList.remove('hidden');
+      panelEl.removeAttribute('aria-hidden');
+      panelEl.classList.toggle('dd-collapsed', !!panelState.collapsed);
+    }
   }
-  if (dock) dock.style.display = wave ? 'flex' : 'none';
+  if (dock) dock.style.display = (!overlayBlocking && !terminalPhase && wave) ? 'flex' : 'none';
 
   /* ---- LEFT CLUSTER ---- */
   left.textContent = '';
@@ -475,7 +517,9 @@ export function renderHud(snapshot) {
     ? ({ briefing: t('hud.phase.briefing'), plan: t('hud.phase.deployment'), wave: t('hud.phase.active'), report: t('hud.phase.triage'), perk: t('hud.phase.deployment') }[phase] || String(phase).toUpperCase())
     : (mode === 'crisis_board' ? String(phase).toUpperCase() : t('hud.phase.blitz'));
   left.appendChild(el('span', 'ddh-pill', { text: `${pillText}`, title: phaseLbl }));
-  left.appendChild(el('span', 'ddh-pill', { text: phaseLbl }));
+  if (phaseLbl && phaseLbl !== pillText) {
+    left.appendChild(el('span', 'ddh-pill', { text: phaseLbl }));
+  }
 
   const seedStr = snapshot.seedStr || (snapshot.replay && snapshot.replay.seedStr) || null;
   if (seedStr) {
@@ -607,37 +651,7 @@ export function renderHud(snapshot) {
 }
 
 /* ---------------------------------------------------------------- rail */
-function renderRail(rail, snapshot, mode, phase) {
-  rail.textContent = '';
-  rail.classList.toggle('collapsed', !!panelState.collapsed);
-
-  const selectedId = snapshot.selectedDistrict || snapshot.selectedId || null;
-  const districts = Array.isArray(snapshot.districts) ? snapshot.districts : [];
-
-  const handle = el('button', 'ddh-rail-handle', {
-    type: 'button', 'data-dd-action': 'toggle-panel', 'aria-expanded': panelState.collapsed ? 'false' : 'true',
-    'aria-controls': 'ddRailBody',
-  });
-  const railTitle = mode === 'crisis_board'
-    ? L('CRISIS ALLOCATION', 'ALOKASI KRISIS')
-    : L('DEPLOYMENT PLAN', 'RENCANA PENGERAHAN');
-  handle.innerHTML = `<span class="ddh-rail-title">${esc(railTitle)}</span><span class="ddh-chev">${panelState.collapsed ? '+' : '-'}</span>`;
-  rail.appendChild(handle);
-
-  const body = el('div', 'ddh-rail-body', { id: 'ddRailBody' });
-  body.style.display = 'flex';
-  body.style.flexDirection = 'column';
-  body.style.gap = '10px';
-
-  /* Incident / event card (crisis board) */
-  if (mode === 'crisis_board' && snapshot.eventCard) {
-    const ev = snapshot.eventCard;
-    const card = el('div', 'ddh-event', { role: 'status' });
-    card.innerHTML = `<b>${esc(String(ev.name || ev.id || '').toUpperCase())}</b><p>${esc(String(ev.desc || ''))}</p>`;
-    body.appendChild(card);
-  }
-
-  /* District roster with threat meters */
+function buildDistrictList(districts, selectedId, mode) {
   const list = el('div', 'ddh-districts', { role: 'listbox', 'aria-label': L('Districts', 'Wilayah') });
   const maxRisk = 3;
   for (const dstr of districts) {
@@ -659,9 +673,15 @@ function renderRail(rail, snapshot, mode, phase) {
       ? clamp(Math.round(((Number(dstr.median) || 0) / Math.max(1, Number(dstr.endemicThreshold) || 1)) * 45), 4, 100)
       : clamp(((riskTier + 1) / 4) * 100, 8, 100);
     const riskName = dstr.riskName || dstr.threat || '';
+    const activeProtos = mode === 'operations' && dstr.protos
+      ? ['psn', 'traps', 'fog', 'clinic'].filter((k) => dstr.protos[k]).map((k) => k.toUpperCase()).join('/')
+      : '';
+    const subParts = [`${fmtInt(cases)} ${L('cases', 'kasus')}`];
+    if (mit != null) subParts.push(`${mit}%`);
+    if (activeProtos) subParts.push(activeProtos);
     row.innerHTML =
       `<span><span class="ddh-district-name">${esc(String(name).toUpperCase())}</span><br>` +
-      `<span class="ddh-district-sub">${esc(fmtInt(cases))} ${esc(L('cases', 'kasus'))}${mit != null ? ` · ${esc(t('hud.mitigation').toUpperCase())} ${esc(mit)}%` : ''}</span></span>` +
+      `<span class="ddh-district-sub">${esc(subParts.join(' · '))}</span></span>` +
       `<span class="ddh-meter"><i class="l${lvl}" style="width:${meterPct}%"></i></span>` +
       `<span class="ddh-risk">${esc(String(riskName).toUpperCase())}</span>`;
     list.appendChild(row);
@@ -669,10 +689,33 @@ function renderRail(rail, snapshot, mode, phase) {
   if (districts.length === 0) {
     list.appendChild(el('div', 'ddh-kv', { text: L('No district telemetry yet.', 'Belum ada telemetri wilayah.') }));
   }
-  body.appendChild(list);
+  return list;
+}
+
+function renderRail(rail, snapshot, mode, phase) {
+  rail.textContent = '';
+  rail.classList.toggle('collapsed', !!panelState.collapsed);
+
+  const selectedId = snapshot.selectedDistrict || snapshot.selectedId || null;
+  const districts = Array.isArray(snapshot.districts) ? snapshot.districts : [];
+
+  const handle = el('button', 'ddh-rail-handle', {
+    type: 'button', 'data-dd-action': 'toggle-panel', 'aria-expanded': panelState.collapsed ? 'false' : 'true',
+    'aria-controls': 'ddRailBody',
+  });
+  const railTitle = mode === 'crisis_board'
+    ? L('CRISIS ALLOCATION', 'ALOKASI KRISIS')
+    : L('DEPLOYMENT PLAN', 'RENCANA PENGERAHAN');
+  handle.innerHTML = `<span class="ddh-rail-title">${esc(railTitle)}</span><span class="ddh-chev">${panelState.collapsed ? '+' : '-'}</span>`;
+  rail.appendChild(handle);
+
+  const body = el('div', 'ddh-rail-body', { id: 'ddRailBody' });
+  body.style.display = 'flex';
+  body.style.flexDirection = 'column';
+  body.style.gap = '9px';
 
   if (mode === 'crisis_board') {
-    /* AP economy + cordon readout */
+    /* 1) AP economy + cordon readout at the very top */
     const kv = el('div', 'ddh-kv');
     kv.innerHTML =
       `<span>${esc(t('hud.ap').toUpperCase())}: <b>${esc(fmtInt(snapshot.ap))} / ${esc(fmtInt(snapshot.maxAp))}</b></span>` +
@@ -680,7 +723,16 @@ function renderRail(rail, snapshot, mode, phase) {
       `<span>${esc(L('DEEP INTEL', 'INTEL'))}: <b>${esc(String(snapshot.deepIntelCharges ?? 0))}</b></span>`;
     body.appendChild(kv);
 
-    /* Allocation actions (data-driven) */
+    /* 2) Primary commit action reachable immediately */
+    if (phase === 'allocate' || phase === 'intel') {
+      const commit = el('button', 'ddh-commit', {
+        type: 'button', 'data-dd-action': 'commit', 'data-commit-mode': 'crisis_board',
+      });
+      commit.innerHTML = `${iconSvg('vec-defense-shield')}<span>${esc(t('hud.commitTurn'))}</span>`;
+      body.appendChild(commit);
+    }
+
+    /* 3) Allocation actions */
     const actions = Array.isArray(snapshot.actions) ? snapshot.actions : [];
     const grid = el('div', 'ddh-actions', { role: 'group', 'aria-label': L('Allocate actions', 'Alokasi aksi') });
     for (const a of actions) {
@@ -698,24 +750,49 @@ function renderRail(rail, snapshot, mode, phase) {
     }
     body.appendChild(grid);
 
-    if (phase === 'allocate' || phase === 'intel') {
-      const commit = el('button', 'ddh-commit', {
-        type: 'button', 'data-dd-action': 'commit', 'data-commit-mode': 'crisis_board',
-      });
-      commit.innerHTML = `${iconSvg('vec-defense-shield')}<span>${esc(t('hud.commitTurn'))}</span>`;
-      body.appendChild(commit);
+    /* 4) Dry-run forecast preview */
+    if (snapshot.preview && snapshot.preview.hospital) {
+      const pv = snapshot.preview;
+      const h = pv.hospital;
+      const box = el('div', 'ddh-preview', { role: 'status' });
+      box.innerHTML =
+        `<b>${esc(String(pv.label || 'FORECAST'))}</b>` +
+        `<span>ICU: ${esc(fmtInt(h.loadBefore))} -> ${esc(fmtInt(h.loadAfter))} / ${esc(fmtInt(h.capAfter))} · ${esc(L('BLOCKED', 'TERBLOKIR'))} ${esc(fmtInt(pv.spilloverBlockedDelta || 0))}</span>`;
+      body.appendChild(box);
     }
+
+    /* 5) Incident / event card */
+    if (snapshot.eventCard) {
+      const ev = snapshot.eventCard;
+      const card = el('div', 'ddh-event', { role: 'status' });
+      const eff = ev.effect ? `<small>${esc(String(ev.effect))}</small>` : '';
+      card.innerHTML = `<b>${esc(String(ev.name || ev.id || '').toUpperCase())}</b>${eff}<p>${esc(String(ev.desc || ''))}</p>`;
+      body.appendChild(card);
+    }
+
+    /* 6) District roster */
+    body.appendChild(el('div', 'ddh-sec-title', { text: L('DISTRICTS', 'WILAYAH') }));
+    body.appendChild(buildDistrictList(districts, selectedId, mode));
   } else {
-    /* Operations: selected district readout + protocol toggles */
+    /* Operations: Selected district summary -> Launch CTA -> Protocols & Sweep -> District roster */
     const sel = districts.find((x) => x && x.id === selectedId) || districts[0] || null;
     if (sel) {
       const kv = el('div', 'ddh-kv');
       const pred = sel.predMedian != null ? `${fmtInt(sel.predMedian)} (${fmtInt(sel.predLow)}-${fmtInt(sel.predHigh)})` : 'n/a';
       kv.innerHTML =
-        `<span>${esc(L('FORECAST', 'PROYEKSI'))}: <b>${esc(pred)}</b></span>` +
+        `<span>${esc(String(sel.name || sel.id || '').toUpperCase())}: <b>${esc(pred)}</b></span>` +
         `<span>${esc(L('POOLS', 'GENANGAN'))}: <b>${esc(fmtInt(sel.pools))}</b></span>` +
-        `<span>${esc(t('hud.mitigation').toUpperCase())}: <b>${sel.mitigationPct != null ? esc(Math.round(sel.mitigationPct)) + '%' : 'n/a'}</b></span>`;
+        `<span>${esc(t('hud.mitigation').toUpperCase())}: <b>${sel.mitigationPct != null ? esc(Math.round(sel.mitigationPct)) + '%' : '0%'}</b></span>`;
       body.appendChild(kv);
+    }
+
+    if (phase === 'plan') {
+      const commit = el('button', 'ddh-commit', {
+        type: 'button', 'data-dd-action': 'commit', 'data-commit-mode': 'operations',
+        title: t('hud.launchWave'),
+      });
+      commit.innerHTML = `${iconSvg('vec-command-chevron')}<span>${esc(t('hud.launchWave'))}</span>`;
+      body.appendChild(commit);
     }
 
     const costs = snapshot.protocolCosts || {};
@@ -742,25 +819,22 @@ function renderRail(rail, snapshot, mode, phase) {
     }
     body.appendChild(grid);
 
-    /* Surveillance ping (intel economy) */
     if (costs.ping != null || snapshot.pingCost != null) {
       const pingCost = costs.ping != null ? costs.ping : snapshot.pingCost;
+      const freeAudits = Number(snapshot.freeRiskAudits || 0);
+      const pingSub = freeAudits > 0
+        ? `${L('FREE', 'GRATIS')} x${freeAudits}`
+        : `${fmtInt(pingCost)} ${t('hud.funds').toUpperCase()}`;
       const ping = el('button', 'ddh-proto', {
         type: 'button', 'data-dd-action': 'ping', 'data-district': selectedId ? String(selectedId) : '',
         'aria-label': L('Surveillance sweep', 'Patroli surveilans'),
       });
-      ping.innerHTML = `<b>${iconSvg('vec-radar-dish')}${esc(L('PING', 'PATROLI'))}</b><span>${esc(fmtInt(pingCost))} ${esc(t('hud.funds').toUpperCase())}</span>`;
+      ping.innerHTML = `<b>${iconSvg('vec-radar-dish')}${esc(L('PING', 'PATROLI'))}</b><span>${esc(pingSub)}</span>`;
       body.appendChild(ping);
     }
 
-    if (phase === 'plan') {
-      const commit = el('button', 'ddh-commit', {
-        type: 'button', 'data-dd-action': 'commit', 'data-commit-mode': 'operations',
-        title: t('hud.launchWave'),
-      });
-      commit.innerHTML = `${iconSvg('vec-command-chevron')}<span>${esc(t('hud.launchWave'))}</span>`;
-      body.appendChild(commit);
-    }
+    body.appendChild(el('div', 'ddh-sec-title', { text: L('DISTRICTS', 'WILAYAH') }));
+    body.appendChild(buildDistrictList(districts, selectedId, mode));
   }
 
   rail.appendChild(body);
@@ -825,6 +899,8 @@ export function setPanelCollapsed(collapsed) {
   panelState.collapsed = !!collapsed;
   const d = doc();
   if (!d) return panelState.collapsed;
+  const panel = d.getElementById('panel');
+  if (panel) panel.classList.toggle('dd-collapsed', panelState.collapsed);
   const rail = d.getElementById('ddRail');
   if (rail) {
     rail.classList.toggle('collapsed', panelState.collapsed);
@@ -987,7 +1063,7 @@ function handleAction(action, target, ev) {
     }
     case 'toggle-protocol': {
       const protocol = target.getAttribute('data-protocol');
-      const districtId = target.getAttribute('data-district');
+      const districtId = target.getAttribute('data-district') || (lastSnapshot && lastSnapshot.selectedDistrict) || '';
       const active = target.getAttribute('aria-pressed') === 'true';
       const handled = callHandler('onProtocolToggle', protocol, districtId, !active);
       if (handled === undefined) dispatchDd('dd:toggle-protocol', { protocol, districtId, active: !active });
@@ -1017,7 +1093,7 @@ function handleAction(action, target, ev) {
       return;
     }
     case 'ping': {
-      const districtId = target.getAttribute('data-district');
+      const districtId = target.getAttribute('data-district') || (lastSnapshot && lastSnapshot.selectedDistrict) || '';
       const handled = callHandler('onPing', districtId);
       if (handled === undefined) dispatchDd('dd:ping', { districtId });
       return;

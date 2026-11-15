@@ -88,6 +88,67 @@ function resolveCanvas(canvas) {
   return null;
 }
 
+function isDomVisible(node) {
+  if (!node || node.hidden || node.classList?.contains('hidden') || node.getAttribute?.('aria-hidden') === 'true') return false;
+  if (typeof window !== 'undefined' && typeof window.getComputedStyle === 'function') {
+    const cs = window.getComputedStyle(node);
+    if (!cs || cs.display === 'none' || cs.visibility === 'hidden') return false;
+  } else if (node.style?.display === 'none') {
+    return false;
+  }
+  return true;
+}
+
+function computeLayoutInsets(w, h) {
+  let top = 12, right = 12, bottom = 12, left = 12;
+  if (typeof document === 'undefined') return { top, right, bottom, left };
+  const hud = document.getElementById('hud');
+  if (isDomVisible(hud)) {
+    const r = hud.getBoundingClientRect?.();
+    if (r && r.height > 0 && r.bottom > 0) {
+      top = Math.max(top, Math.min(Math.round(h * 0.35), Math.ceil(r.bottom + 8)));
+    }
+  }
+  const panel = document.getElementById('panel');
+  if (isDomVisible(panel) && !panel.classList?.contains('dd-collapsed')) {
+    const pr = panel.getBoundingClientRect?.();
+    if (pr && pr.width > 40 && pr.height > 40) {
+      if (w >= 900) {
+        right = Math.max(right, Math.min(Math.round(w * 0.48), Math.ceil(w - pr.left + 12)));
+      } else {
+        bottom = Math.max(bottom, Math.min(Math.round(h * 0.52), Math.ceil(h - pr.top + 8)));
+      }
+    }
+  }
+  const dock = document.getElementById('ddDock');
+  if (isDomVisible(dock)) {
+    const dr = dock.getBoundingClientRect?.();
+    if (dr && dr.height > 0 && dr.top < h) {
+      bottom = Math.max(bottom, Math.min(Math.round(h * 0.28), Math.ceil(h - dr.top + 8)));
+    }
+  }
+  return { top, right, bottom, left };
+}
+
+function applyProjection(w, h) {
+  const insets = computeLayoutInsets(w, h);
+  const availW = Math.max(160, w - insets.left - insets.right);
+  const availH = Math.max(160, h - insets.top - insets.bottom);
+  view.scale = Math.max(0.01, Math.min(availW / CORRIDOR.MW, availH / CORRIDOR.MH));
+  view.ox = insets.left + (availW - CORRIDOR.MW * view.scale) / 2;
+  view.oy = insets.top + (availH - CORRIDOR.MH * view.scale) / 2;
+}
+
+/**
+ * syncViewProjection() -> view descriptor
+ * Updates corridor projection offsets/scale to avoid overlapping #hud, #panel, or #ddDock
+ * without reallocating canvas backing dimensions.
+ */
+export function syncViewProjection() {
+  applyProjection(view.w, view.h);
+  return getView();
+}
+
 /**
  * resizeCanvas(canvas?) -> view descriptor
  * Sizes the canvas to its CSS box (or the viewport) * devicePixelRatio (clamped to 2),
@@ -119,9 +180,7 @@ export function resizeCanvas(canvas) {
   view.w = w;
   view.h = h;
   view.dpr = dpr;
-  view.scale = Math.max(0.01, Math.min((w - 12) / CORRIDOR.MW, Math.max(1, h - 24) / CORRIDOR.MH));
-  view.ox = (w - CORRIDOR.MW * view.scale) / 2;
-  view.oy = 12 + (h - 24 - CORRIDOR.MH * view.scale) / 2;
+  applyProjection(w, h);
   return getView();
 }
 
@@ -297,6 +356,7 @@ export class MapRenderer {
   render(ctx, state = {}, now = (typeof performance !== 'undefined' ? performance.now() : Date.now())) {
     const c = ctx ?? this.ctx;
     if (!c) return;
+    applyProjection(view.w, view.h);
     const time = state.time ?? now / 1000;
 
     // Screen-space pass: clear + background

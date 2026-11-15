@@ -443,6 +443,33 @@ function onDirectiveChoiceEvent(ev) {
 function onCommitEvent() { if (S.phase === 'plan') commitDeployment(); }
 function onSprayEvent() { if (S.phase === 'wave') triggerSprayBurst(S.lastPt); }
 function onSurgeWardEvent() { if (S.phase === 'wave') buySurgeWard(); }
+function selectDistrictById(districtId) {
+  const G = getG();
+  if (!G || !districtId) return false;
+  const hit = districtById(districtId);
+  if (!hit) return false;
+  S.selectedId = hit.id;
+  G.selected = hit.id;
+  setG(G);
+  SFX.play('tap');
+  return true;
+}
+function onSelectDistrictEvent(ev) {
+  const detail = (ev && ev.detail) || {};
+  selectDistrictById(detail.districtId || detail.id || null);
+}
+function onToggleProtocolEvent(ev) {
+  const detail = (ev && ev.detail) || {};
+  const protoId = detail.protocol || detail.id || null;
+  if (!protoId) return;
+  if (detail.districtId) selectDistrictById(detail.districtId);
+  toggleProtocol(protoId);
+}
+function onPingEvent(ev) {
+  const detail = (ev && ev.detail) || {};
+  if (detail.districtId) selectDistrictById(detail.districtId);
+  firePing();
+}
 function onReportContinueEvent() { if (S.phase === 'report') continueFromReport(); }
 function onPerkPickEvent(ev) {
   const detail = (ev && ev.detail) || {};
@@ -456,6 +483,9 @@ function registerListeners() {
   listen('dd:commit-plan', onCommitEvent);
   listen('dd:spray-burst', onSprayEvent);
   listen('dd:surge-ward', onSurgeWardEvent);
+  listen('dd:select-district', onSelectDistrictEvent);
+  listen('dd:toggle-protocol', onToggleProtocolEvent);
+  listen('dd:ping', onPingEvent);
   listen('dd:report-continue', onReportContinueEvent);
   listen('dd:perk-pick', onPerkPickEvent);
   listener.attached = true;
@@ -467,6 +497,9 @@ function unregisterListeners() {
   unlisten('dd:commit-plan', onCommitEvent);
   unlisten('dd:spray-burst', onSprayEvent);
   unlisten('dd:surge-ward', onSurgeWardEvent);
+  unlisten('dd:select-district', onSelectDistrictEvent);
+  unlisten('dd:toggle-protocol', onToggleProtocolEvent);
+  unlisten('dd:ping', onPingEvent);
   unlisten('dd:report-continue', onReportContinueEvent);
   unlisten('dd:perk-pick', onPerkPickEvent);
   listener.attached = false;
@@ -1614,20 +1647,18 @@ const OperationsMode = {
         const risk = districtRisk(d);
         const revealed = !!d.revealed || (S.campaignMods.revealAllMonths || 0) > 0;
         drawDistrictPolygon(ctx, { ...d, risk }, { time, selected: d.id === S.selectedId, alpha: revealed ? undefined : 0.10 });
-        // Centroid labels: forecast band when unrevealed, live tally when revealed
+        // Centroid labels: always show baseline case count + forecast range
         const pred = districtPrediction(d);
         ctx.save();
         ctx.font = '600 10px "Cascadia Mono", Consolas, monospace';
         ctx.textAlign = 'center';
-        ctx.fillStyle = 'rgba(230, 240, 242, 0.82)';
+        ctx.fillStyle = 'rgba(230, 240, 242, 0.90)';
         ctx.fillText(d.name || String(d.id).toUpperCase(), d.c[0], d.c[1] - 10);
-        ctx.font = '9px "Cascadia Mono", Consolas, monospace';
-        ctx.fillStyle = revealed ? 'rgba(125, 211, 252, 0.9)' : 'rgba(143, 168, 178, 0.75)';
-        ctx.fillText(revealed ? ('CENSUS ' + Math.round(d.cases || 0)) : ('FA ' + pred.low + '-' + pred.high), d.c[0], d.c[1] + 2);
-        if (!revealed) {
-          ctx.fillStyle = 'rgba(245, 158, 11, 0.65)';
-          ctx.fillText('NO INTEL', d.c[0], d.c[1] + 13);
-        }
+        ctx.font = '600 9px "Cascadia Mono", Consolas, monospace';
+        ctx.fillStyle = revealed ? '#7DD3FC' : 'rgba(230, 240, 242, 0.78)';
+        ctx.fillText('CASES ' + Math.round(d.cases || 0), d.c[0], d.c[1] + 2);
+        ctx.fillStyle = revealed ? 'rgba(125, 211, 252, 0.92)' : 'rgba(245, 158, 11, 0.80)';
+        ctx.fillText((revealed ? 'INTEL ' : 'FA ') + pred.low + '-' + pred.high, d.c[0], d.c[1] + 13);
         ctx.restore();
         // Selection lock marker (dashed amber handled by drawDistrictPolygon)
         if (d.radar) drawHotspotNode(ctx, d.c[0], d.c[1] - 22, { time, color: '#38BDF8', intensity: 0.8 });
@@ -1702,22 +1733,17 @@ const OperationsMode = {
 
     ctx.restore();
 
-    // ---- Phase banner ribbon (map-space overlay drawn in screen space) ----
-    ctx.save();
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    // ---- Phase progress ribbon (wave) ----
     if (S.phase === 'wave') {
+      ctx.save();
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       const frac = S.waveDuration > 0 ? S.waveTimeLeft / S.waveDuration : 0;
       ctx.fillStyle = 'rgba(11, 21, 25, 0.55)';
-      ctx.fillRect(0, (v.h || 500) - 6, (v.w || 700) * frac, 3);
+      ctx.fillRect(0, (v.h || 500) - 4, v.w || 700, 4);
       ctx.fillStyle = frac > 0.3 ? '#38BDF8' : '#EF4444';
-      ctx.fillRect(0, (v.h || 500) - 6, (v.w || 700) * frac, 3);
-    } else if (S.phase === 'briefing') {
-      ctx.fillStyle = 'rgba(245, 158, 11, 0.85)';
-      ctx.font = '700 11px "Cascadia Mono", Consolas, monospace';
-      ctx.textAlign = 'center';
-      ctx.fillText('DIRECTIVE INBOUND - ' + Math.ceil(S.briefingT) + 's', (v.w || 700) / 2, 18);
+      ctx.fillRect(0, (v.h || 500) - 4, (v.w || 700) * frac, 4);
+      ctx.restore();
     }
-    ctx.restore();
   },
 
   /* Pointer handlers. `pt` is expected in corridor map coordinates
