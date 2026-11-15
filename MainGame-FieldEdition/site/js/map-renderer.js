@@ -110,13 +110,13 @@ function computeLayoutInsets(w, h) {
     }
   }
   const panel = document.getElementById('panel');
-  if (isDomVisible(panel) && !panel.classList?.contains('dd-collapsed')) {
+  if (isDomVisible(panel)) {
     const pr = panel.getBoundingClientRect?.();
-    if (pr && pr.width > 40 && pr.height > 40) {
+    if (pr && pr.width > 40 && pr.height > 90) {
       if (w >= 900) {
-        right = Math.max(right, Math.min(Math.round(w * 0.48), Math.ceil(w - pr.left + 12)));
+        right = Math.max(right, Math.min(Math.round(w * 0.48), Math.ceil(w - pr.left + 24)));
       } else {
-        bottom = Math.max(bottom, Math.min(Math.round(h * 0.52), Math.ceil(h - pr.top + 8)));
+        bottom = Math.max(bottom, Math.min(Math.round(h * 0.52), Math.ceil(h - pr.top + 12)));
       }
     }
   }

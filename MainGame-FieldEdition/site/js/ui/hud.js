@@ -180,7 +180,8 @@ function ensureStyle() {
     padding:12px 12px calc(14px + env(safe-area-inset-bottom,0px));
     overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;scrollbar-color:var(--border-strong,#2E4D5B) transparent;
     color:var(--text-primary,#E6F0F2);font-family:var(--font-sans,'Plus Jakarta Sans','Inter','Segoe UI',system-ui,sans-serif);}
-  #ddRail.collapsed .ddh-rail-body{display:none;}
+  #ddRail.collapsed .ddh-rail-body{display:none !important;}
+  .ddh-rail-body{display:flex;flex-direction:column;gap:9px;}
   .ddh-rail-handle{display:flex;align-items:center;justify-content:space-between;gap:10px;background:transparent;
     border:0;border-bottom:1px solid var(--border-subtle,rgba(148,210,230,.14));padding:2px 2px 8px;cursor:pointer;color:var(--text-primary,#E6F0F2);text-align:left;width:100%;}
   .ddh-rail-handle .ddh-rail-title{font-size:10px;letter-spacing:.15em;font-weight:800;color:var(--text-secondary,#8FA8B2);}
@@ -400,6 +401,8 @@ function isScreenOpen(d, id) {
 }
 
 function hideChrome(d) {
+  lastRailSig = '';
+  lastDockSig = '';
   if (!d) return;
   const hudEl = d.getElementById('hud');
   const panelEl = d.getElementById('panel');
@@ -446,6 +449,9 @@ function threatLevel(tier, maxTier) {
 
 /* ================================================================ RENDER */
 let lastSnapshot = null;
+let lastRailSig = '';
+let lastDockSig = '';
+const safeSig = (v) => { try { return JSON.stringify(v); } catch (e) { return String(Math.random()); } };
 const boundRoots = new WeakSet();
 const panelState = { collapsed: false };
 let currentHandlers = {};
@@ -483,6 +489,7 @@ export function renderHud(snapshot) {
   }
   if (overlayBlocking || terminalPhase || isBlitz || wave || !planning) {
     if (panelEl) { panelEl.classList.add('hidden'); panelEl.setAttribute('aria-hidden', 'true'); }
+    lastRailSig = '';
   } else {
     if (panelEl) {
       panelEl.classList.remove('hidden');
@@ -630,16 +637,51 @@ export function renderHud(snapshot) {
 
   /* ---- MODE-SPECIFIC SURFACES ---- */
   const panelScaffold = ensurePanelScaffold();
-  if (planning && panelScaffold) {
-    renderRail(panelScaffold.rail, snapshot, mode, phase);
+  if (!overlayBlocking && !terminalPhase && planning && panelScaffold) {
+    const railSig = safeSig({
+      lang,
+      mode,
+      phase,
+      collapsed: !!panelState.collapsed,
+      sel: snapshot.selectedDistrict || snapshot.selectedId || null,
+      ap: snapshot.ap ?? null,
+      maxAp: snapshot.maxAp ?? null,
+      cA: snapshot.cordonActive ?? null,
+      cM: snapshot.cordonMax ?? null,
+      dI: snapshot.deepIntelCharges ?? null,
+      fA: snapshot.freeRiskAudits ?? null,
+      pC: snapshot.pingCost ?? null,
+      costs: snapshot.protocolCosts || null,
+      districts: snapshot.districts || null,
+      actions: snapshot.actions || null,
+      preview: snapshot.preview || null,
+      eventCard: snapshot.eventCard || null,
+    });
+    if (railSig !== lastRailSig || !panelScaffold.rail.children.length) {
+      lastRailSig = railSig;
+      renderRail(panelScaffold.rail, snapshot, mode, phase);
+    }
   }
-  if (wave && dock) {
-    renderDock(dock, snapshot);
+  if (!overlayBlocking && !terminalPhase && wave && dock) {
+    const dockSig = safeSig({
+      lang,
+      charge: Math.round(Number(snapshot.sprayCharge) || 0),
+      ready: !!snapshot.sprayReady,
+      surge: !!snapshot.surgeWardAvailable,
+      sCost: snapshot.surgeWardCost ?? null,
+      sRel: snapshot.surgeWardRelief ?? null,
+    });
+    if (dockSig !== lastDockSig || !dock.children.length) {
+      lastDockSig = dockSig;
+      renderDock(dock, snapshot);
+    }
   } else if (dock && !isBlitz) {
     dock.style.display = 'none';
+    lastDockSig = '';
   }
   if (isBlitz && panelScaffold) {
-    panelScaffold.rail.textContent = '';
+    if (panelScaffold.rail.textContent) panelScaffold.rail.textContent = '';
+    lastRailSig = '';
   }
 
   /* wire delegated controls once per root */
@@ -710,9 +752,6 @@ function renderRail(rail, snapshot, mode, phase) {
   rail.appendChild(handle);
 
   const body = el('div', 'ddh-rail-body', { id: 'ddRailBody' });
-  body.style.display = 'flex';
-  body.style.flexDirection = 'column';
-  body.style.gap = '9px';
 
   if (mode === 'crisis_board') {
     /* 1) AP economy + cordon readout at the very top */
@@ -897,6 +936,8 @@ function renderDock(dock, snapshot) {
 /* --------------------------------------------------- panel collapse API */
 export function setPanelCollapsed(collapsed) {
   panelState.collapsed = !!collapsed;
+  lastRailSig = '';
+  lastDockSig = '';
   const d = doc();
   if (!d) return panelState.collapsed;
   const panel = d.getElementById('panel');
@@ -971,6 +1012,8 @@ export function bindHudControls(handlers) {
     /* Language hot-swap re-renders from the last snapshot */
     if (!win().__ddHudLangBound && typeof win().addEventListener === 'function') {
       win().addEventListener('dd:langchange', () => {
+        lastRailSig = '';
+        lastDockSig = '';
         if (lastSnapshot) { try { renderHud(lastSnapshot); } catch (e) { /* keep chrome stable */ } }
       });
       win().__ddHudLangBound = true;
@@ -982,11 +1025,54 @@ export function bindHudControls(handlers) {
 function bindDelegated(root) {
   if (!root || boundRoots.has(root)) return;
   boundRoots.add(root);
+  let downAction = null;
+  root.addEventListener('pointerdown', (ev) => {
+    const node = ev.target && ev.target.closest ? ev.target.closest('[data-dd-action]') : null;
+    if (!node || !root.contains(node)) { downAction = null; return; }
+    downAction = {
+      action: node.getAttribute('data-dd-action'),
+      commitMode: node.getAttribute('data-commit-mode'),
+      protocol: node.getAttribute('data-protocol'),
+      district: node.getAttribute('data-district'),
+      actionId: node.getAttribute('data-action'),
+      lang: node.getAttribute('data-lang'),
+      seed: node.getAttribute('data-seed'),
+      pressed: node.getAttribute('aria-pressed'),
+      time: Date.now(),
+    };
+  });
   root.addEventListener('click', (ev) => {
-    const target = ev.target && ev.target.closest ? ev.target.closest('[data-dd-action]') : null;
-    if (!target || !root.contains(target)) return;
-    const action = target.getAttribute('data-dd-action');
-    handleAction(action, target, ev);
+    let target = ev.target && ev.target.closest ? ev.target.closest('[data-dd-action]') : null;
+    if ((!target || !root.contains(target)) && typeof document !== 'undefined' && typeof document.elementFromPoint === 'function' && Number.isFinite(ev.clientX) && Number.isFinite(ev.clientY)) {
+      const hit = document.elementFromPoint(ev.clientX, ev.clientY);
+      if (hit && hit.closest) target = hit.closest('[data-dd-action]');
+    }
+    if (target && root.contains(target)) {
+      downAction = null;
+      const action = target.getAttribute('data-dd-action');
+      handleAction(action, target, ev);
+      return;
+    }
+    if (downAction && (Date.now() - downAction.time) < 1200 && downAction.action) {
+      const snap = downAction;
+      downAction = null;
+      const shimTarget = {
+        getAttribute(k) {
+          switch (k) {
+            case 'data-dd-action': return snap.action;
+            case 'data-commit-mode': return snap.commitMode;
+            case 'data-protocol': return snap.protocol;
+            case 'data-district': return snap.district;
+            case 'data-action': return snap.actionId;
+            case 'data-lang': return snap.lang;
+            case 'data-seed': return snap.seed;
+            case 'aria-pressed': return snap.pressed;
+            default: return null;
+          }
+        },
+      };
+      handleAction(snap.action, shimTarget, ev);
+    }
   });
 }
 
@@ -1035,6 +1121,8 @@ function handleAction(action, target, ev) {
       return;
     }
     case 'commit': {
+      lastRailSig = '';
+      lastDockSig = '';
       const mode = target.getAttribute('data-commit-mode') || detectMode(lastSnapshot);
       const handled = callHandler('onCommit', mode);
       if (handled === undefined) dispatchDd(mode === 'crisis_board' ? 'dd:commit-turn' : 'dd:commit-deployment', { mode });

@@ -1567,6 +1567,21 @@ const OperationsMode = {
     S.phase = 'idle';
   },
 
+  commitDeployment() {
+    if (S.phase === 'plan') commitDeployment();
+  },
+  selectDistrict(districtId) {
+    return selectDistrictById(districtId);
+  },
+  toggleProtocol(protoId, districtId) {
+    if (districtId) selectDistrictById(districtId);
+    return toggleProtocol(protoId);
+  },
+  ping(districtId) {
+    if (districtId) selectDistrictById(districtId);
+    return firePing();
+  },
+
   update(dt, now) {
     if (!S.active || S.paused) return;
     const step = clamp(Number(dt) || 0, 0, 0.1);
@@ -1867,7 +1882,7 @@ const OperationsMode = {
         name: d.name,
         risk: districtRisk(d),
         riskName: RISK_IDS[districtRisk(d)],
-        mitigationPct: Math.round(d.mitigationShown != null ? d.mitigationShown : mitigationFor(d)),
+        mitigationPct: Math.round(d.mitigationTarget != null ? d.mitigationTarget : mitigationFor(d)),
         revealed,
         radar: !!d.radar,
         predMedian: pred.median,

@@ -817,10 +817,16 @@ function wireDom() {
   $('panelHandle')?.addEventListener('click', togglePanel);
   $('panelCommitBtn')?.addEventListener('click', () => {
     if (currentModeId === 'crisis_board') {
-      forwardToMode({ key: 'Enter', preventDefault() {} });
+      if (currentMode && typeof currentMode.commitTurn === 'function') currentMode.commitTurn();
+      else forwardToMode({ key: 'Enter', preventDefault() {} });
     } else {
+      if (currentMode && typeof currentMode.commitDeployment === 'function') currentMode.commitDeployment();
       dispatchDd('dd:commit-deployment', {});
     }
+    const snap = safeSnapshot();
+    refreshHud(snap);
+    syncPhaseScreens(snap);
+    syncViewProjection();
   });
 
   // Directive screen (mode1 choices)
@@ -923,12 +929,17 @@ function bindSiblings() {
       uiHud.bindHudControls({
         onPause: () => { togglePause(); return true; },
         onCommit: (mode) => {
-          if (mode === 'crisis_board') {
+          if (mode === 'crisis_board' || currentModeId === 'crisis_board') {
             if (currentMode && typeof currentMode.commitTurn === 'function') currentMode.commitTurn();
             else forwardToMode({ key: 'Enter', preventDefault() {} });
           } else {
+            if (currentMode && typeof currentMode.commitDeployment === 'function') currentMode.commitDeployment();
             dispatchDd('dd:commit-deployment', {});
           }
+          const snap = safeSnapshot();
+          refreshHud(snap);
+          syncPhaseScreens(snap);
+          syncViewProjection();
           return true;
         },
         onSpray: () => { dispatchDd('dd:spray-burst', {}); return true; },
